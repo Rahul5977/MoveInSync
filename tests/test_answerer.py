@@ -11,7 +11,7 @@ from app.llm.base import LLMError
 from app.llm.fake import ExtractiveLLM, FakeLLM, sections_in
 from app.llm.groq import GroqLLM
 from app.main import create_app
-from app.rag.answerer import answer_question
+from app.rag.answerer import NOT_COVERED_MSG, answer_question
 from app.schemas import Principal
 from tests.conftest import read_policy
 
@@ -354,3 +354,40 @@ def test_section_with_ampersand_round_trips_through_extractive(settings, token_f
 
 def r_text(body: dict) -> str:
     return json.dumps(body, ensure_ascii=False)
+
+
+TRACE_FIELDS = {"gate", "best_score", "retrieved_ids", "sent_ids", "model_cited_ids", "error"}
+
+
+def _all_keys(obj) -> set[str]:
+    if isinstance(obj, dict):
+        return set(obj) | set().union(*(_all_keys(v) for v in obj.values()))
+    if isinstance(obj, list):
+        return set().union(*(_all_keys(v) for v in obj)) if obj else set()
+    return set()
+
+
+def test_ask_json_contains_no_trace_fields(settings, token_for):
+    """The Trace is internal (D37): /ask returns exactly the public shape, for every status."""
+    scripted = [
+        FakeLLM(reply()),  # answered
+        FakeLLM(reply(covered=False, cited=[])),  # not_covered (LLM gate)
+        FakeLLM([LLMError("timeout")]),  # try_again
+    ]
+    for llm in scripted:
+        with app_with(settings, llm) as client:
+            body = ask(client, "nimbus", ESCORT_Q, token_for).json()
+        assert set(body) == {"status", "answer", "citations", "meta"}
+        assert set(body["meta"]) == {"llm_calls", "latency_ms", "policy_version", "retrieval_mode"}
+        assert not (_all_keys(body) & TRACE_FIELDS), body
+
+
+def test_not_covered_discards_model_text(settings, token_for):
+    """covered=false: the model's own words never reach the user (D40)."""
+    guess = "Probably yes, Nimbus allows it after 8 PM so you should be fine."
+    llm = FakeLLM(reply(covered=False, answer=guess, cited=["kestrel_v1_s9_p0"]))
+    with app_with(settings, llm) as client:
+        body = ask(client, "kestrel", "Can I get a pickup on Diwali?", token_for).json()
+    assert body["status"] == "not_covered"
+    assert body["answer"] == NOT_COVERED_MSG and body["citations"] == []
+    assert "Probably" not in r_text(body)
