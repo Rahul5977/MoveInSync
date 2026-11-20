@@ -435,3 +435,20 @@ def test_not_covered_discards_model_text(settings, token_for):
     assert body["status"] == "not_covered"
     assert body["answer"] == NOT_COVERED_MSG and body["citations"] == []
     assert "Probably" not in r_text(body)
+
+
+def test_health_reports_llm_not_ready_and_warns_once(settings, token_for, caplog):
+    """No key: app starts, /health says not ready, one startup WARNING, /ask -> try_again (D38)."""
+    with caplog.at_level("WARNING"), app_with(settings, GroqLLM("", "m", 2.5)) as client:
+        health = client.get("/health")
+        ask(client, "nimbus", ESCORT_Q, token_for)
+        ask(client, "nimbus", ESCORT_Q, token_for)
+    assert health.status_code == 200
+    assert health.json() == {"status": "ok", "llm": {"provider": "groq", "ready": False}}
+    startup_warnings = [r for r in caplog.records if "is not ready" in r.getMessage()]
+    assert len(startup_warnings) == 1
+
+
+def test_health_reports_ready_with_key(settings):
+    with app_with(settings, GroqLLM("gsk_test_not_real", "m", 2.5)) as client:
+        assert client.get("/health").json()["llm"] == {"provider": "groq", "ready": True}

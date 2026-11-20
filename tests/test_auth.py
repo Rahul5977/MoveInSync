@@ -1,10 +1,13 @@
 import jwt
 
-from app.config import get_settings
+from tests.conftest import test_settings as get_settings
 
 
 def test_health(client):
-    assert client.get("/health").json() == {"status": "ok"}
+    assert client.get("/health").json() == {
+        "status": "ok",
+        "llm": {"provider": "fake", "ready": True},
+    }
 
 
 def test_ask_requires_token(client):

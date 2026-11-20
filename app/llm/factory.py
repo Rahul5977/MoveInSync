@@ -14,6 +14,4 @@ def make_llm(settings: Settings) -> LLMClient:
     if settings.llm_provider == "fake":
         log.info("LLM provider: fake (extractive, no network)")
         return ExtractiveLLM()
-    if not settings.groq_api_key:
-        log.warning("LLM_PROVIDER=groq but GROQ_API_KEY is not set: /ask will return try_again")
     return GroqLLM(settings.groq_api_key, settings.groq_model, settings.llm_timeout_s)

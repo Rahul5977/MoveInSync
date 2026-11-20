@@ -63,6 +63,11 @@ def create_app(
         vs = store or VectorStore(s.chroma_dir)
         app.state.settings, app.state.registry, app.state.store = s, reg, vs
         app.state.llm = llm or make_llm(s)
+        if not app.state.llm.ready:  # D38: one warning, then the app still starts
+            log.warning(
+                "LLM provider %r is not ready (missing GROQ_API_KEY?): /ask will return try_again",
+                app.state.llm.provider,
+            )
         app.state.reconcile_outcomes = reconcile(reg, vs)  # D16: before seeding
         app.state.seed_outcomes = seed_policies(reg, vs, s)
         yield
@@ -75,8 +80,10 @@ def create_app(
         return JSONResponse(status_code=422, content={"detail": validation_message(exc.errors())})
 
     @app.get("/health")
-    def health() -> dict[str, str]:
-        return {"status": "ok"}
+    def health(request: Request) -> dict:
+        # D35 + D38: no tenant data; just whether answers are possible right now.
+        llm = request.app.state.llm
+        return {"status": "ok", "llm": {"provider": llm.provider, "ready": bool(llm.ready)}}
 
     @app.post("/ask", response_model=AskResponse, responses={503: {"model": AskResponse}})
     def ask(

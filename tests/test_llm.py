@@ -124,8 +124,10 @@ def test_sections_in_round_trips_escaped_text():
 
 
 def test_factory_picks_provider():
-    assert isinstance(make_llm(Settings(llm_provider="fake")), ExtractiveLLM)
-    assert isinstance(make_llm(Settings(llm_provider="groq", groq_api_key="")), GroqLLM)
+    fake = make_llm(Settings(_env_file=None, llm_provider="fake"))
+    groq = make_llm(Settings(_env_file=None, llm_provider="groq", groq_api_key=""))
+    assert isinstance(fake, ExtractiveLLM) and (fake.provider, fake.ready) == ("fake", True)
+    assert isinstance(groq, GroqLLM) and (groq.provider, groq.ready) == ("groq", False)
 
 
 def test_groq_finish_reason_length_is_truncated_output():

@@ -19,6 +19,8 @@ class GroqLLM:
         self._model = model
         self._max_timeout_s = max_timeout_s
         self._client = client or httpx.Client()  # injectable for tests (httpx.MockTransport)
+        self.provider = "groq"
+        self.ready = bool(api_key)
 
     def complete_json(self, system: str, user: str, timeout_s: float) -> str:
         if not self._api_key:

@@ -23,6 +23,7 @@ class FakeLLM:
     def __init__(self, responses: list[str | Exception] | Responder | None = None) -> None:
         self._responses = responses
         self.calls: list[tuple[str, str]] = []
+        self.provider, self.ready = "fake", True
 
     def complete_json(self, system: str, user: str, timeout_s: float = 0.0) -> str:
         self.calls.append((system, user))
@@ -42,6 +43,8 @@ def sections_in(user_prompt: str) -> list[tuple[str, str]]:
 
 
 class ExtractiveLLM:
+    provider, ready = "fake", True
+
     def complete_json(self, system: str, user: str, timeout_s: float = 0.0) -> str:
         sections = sections_in(user)
         if not sections:

@@ -20,6 +20,9 @@ class TruncatedOutput(Exception):
 
 
 class LLMClient(Protocol):
+    provider: str  # "groq" | "fake"
+    ready: bool  # False when a call is certain to fail (e.g. no API key); shown on /health
+
     def complete_json(self, system: str, user: str, timeout_s: float) -> str:
         """Return raw model text expected to be a JSON object.
 
