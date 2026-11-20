@@ -1,8 +1,9 @@
 """Pydantic models at every boundary: HTTP, LLM output, internal chunks."""
 
 from enum import StrEnum
+from typing import Any
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator
 
 
 class Principal(BaseModel):
@@ -61,6 +62,9 @@ class RetrievedChunk(BaseModel):
     score: float
 
 
+SEARCH_QUERY_MAX = 200
+
+
 class LLMAnswer(BaseModel):
     """Shape the LLM must return. Anything else is rejected (-> repair call or try_again)."""
 
@@ -69,3 +73,17 @@ class LLMAnswer(BaseModel):
     covered: bool
     answer: str = Field(max_length=2000)
     cited_ids: list[str] = Field(default_factory=list, max_length=10)
+    # D61: optional search phrase, only used to retrieve again after covered=false. Anything
+    # invalid (missing, empty, > 200 chars, not a string) counts as absent; never a repair.
+    search_query: str | None = None
+
+    @field_validator("search_query", mode="wrap")
+    @classmethod
+    def _search_query_or_none(cls, value: Any, handler) -> str | None:
+        try:
+            q = handler(value)
+        except ValidationError:
+            return None
+        if q is None or not q.strip() or len(q) > SEARCH_QUERY_MAX:
+            return None
+        return q.strip()

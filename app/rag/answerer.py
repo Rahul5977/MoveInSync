@@ -22,7 +22,7 @@ from app.config import Settings
 from app.deadline import Clock, Deadline
 from app.llm.base import ConnectionDropped, LLMClient, LLMError, ModelOutputError
 from app.rag.bm25 import Bm25Cache
-from app.rag.prompt import SYSTEM_PROMPT, build_repair_prompt, build_user_prompt
+from app.rag.prompt import build_repair_prompt, build_user_prompt, system_prompt
 from app.rag.retriever import search
 from app.schemas import (
     AnswerMeta,
@@ -61,6 +61,12 @@ class Trace:
     model_cited_ids: list[str] = field(default_factory=list)
     error: str | None = None
     retried: str | None = None  # D53: reason for the one connection-level retry, if any
+    # D61, only when REWRITE_ON_MISS=on and round 1 said covered=false:
+    search_query: str | None = None  # the model's search phrase (never shown, never prompted)
+    rewrite_triggered: bool = False  # True only if answer call #2 was made
+    rewrite_skip_reason: str | None = None  # why round 2 did not run, if it didn't
+    round2_retrieved_ids: list[str] = field(default_factory=list)
+    round2_sent_ids: list[str] = field(default_factory=list)
 
 
 class InvalidOutput(ValueError):
@@ -152,7 +158,12 @@ def answer_question(
         ask.trace.sent_ids = list(dict.fromkeys(c.chunk_id for c in sent))
         out = _call_llm(ask, build_user_prompt(question, sent), llm)  # 3
         if not out.covered:
-            raise not_covered("llm_not_covered")
+            if settings.rewrite_on_miss != "on":
+                raise not_covered("llm_not_covered")
+            # D61: one more search with the model's phrase, answering the ORIGINAL question
+            out, sent = _rewrite_round(
+                ask, out, principal.company_id, question, sent, llm, registry, store, bm25
+            )
         citations = _valid_citations(ask, out, sent)  # 4
     except Stop as stop:
         if stop.status is AnswerStatus.TRY_AGAIN:
@@ -190,6 +201,74 @@ def _retrieve(ask: Ask, company_id, question, registry, store, bm25) -> list[Ret
     return pool
 
 
+def _rewrite_round(
+    ask: Ask, out: LLMAnswer, company_id, question, sent, llm, registry, store, bm25
+) -> tuple[LLMAnswer, list[RetrievedChunk]]:
+    """D61: round 2 after round 1 said covered=false. Exactly one more call, or none.
+
+    Runs only if: a valid search_query came back; round 1 used exactly 1 call (no repair/retry);
+    >= rewrite_min_remaining_s is left; and the new top 3 differs from round 1's. The search uses
+    the caller's company (JWT) and active collection, like every search; the prompt carries the
+    ORIGINAL question. Every way round 2 can fail ends as not_covered (round 1 already said so).
+    """
+    s, trace = ask.settings, ask.trace
+    trace.search_query = out.search_query
+
+    def skip(reason: str) -> Stop:
+        trace.rewrite_skip_reason = reason
+        return not_covered("llm_not_covered")
+
+    if not out.search_query:
+        raise skip("no_search_query")
+    if ask.llm_calls != 1:
+        raise skip("round1_used_2_calls")
+    if ask.deadline.remaining() < s.rewrite_min_remaining_s:
+        raise skip("deadline")
+    try:
+        pool, version, _ = search(
+            company_id,
+            out.search_query,
+            registry,
+            store,
+            s.retrieval_pool,
+            mode=s.retrieval_mode,
+            bm25=bm25,
+            rrf_k=s.rrf_k,
+        )
+    except Exception:
+        log.exception("Round-2 retrieval failed")
+        raise skip("round2_retrieval_error") from None
+    trace.round2_retrieved_ids = [c.chunk_id for c in pool]
+    new_sent = pool[: s.retrieval_top_k]
+    trace.round2_sent_ids = [c.chunk_id for c in new_sent]
+    if version != ask.version or not new_sent:
+        raise skip("round2_no_chunks")
+    if {c.chunk_id for c in new_sent} == {c.chunk_id for c in sent}:
+        raise skip("same_top3")
+    if ask.deadline.remaining() < s.rewrite_min_remaining_s:
+        raise skip("deadline")
+
+    trace.rewrite_triggered = True
+    ask.llm_calls += 1  # call #2; no repair or retry after it (that would be a third call)
+    try:
+        raw = llm.complete_json(
+            _system(s), build_user_prompt(question, new_sent), ask.deadline.remaining()
+        )
+        out2 = parse_llm_output(raw)
+    except Exception as exc:  # timeout, connection, bad JSON, ... -> not covered (fail-safe)
+        trace.error = f"round2: {exc}"
+        raise not_covered("rewrite_failed") from exc
+    if not out2.covered:
+        raise not_covered("rewrite_not_covered")
+    ask.trace.sent_ids = [c.chunk_id for c in new_sent]
+    ask.trace.model_cited_ids = list(out2.cited_ids)
+    return out2, new_sent
+
+
+def _system(s: Settings) -> str:
+    return system_prompt(rewrite_on_miss=s.rewrite_on_miss == "on")
+
+
 def _tau_gate(ask: Ask, pool: list[RetrievedChunk], best_vector: float | None) -> None:
     """Tau gate (D5/D52) on the best VECTOR score (both modes, D56): off-topic -> 0 LLM calls."""
     ask.trace.best_score = best_vector
@@ -210,7 +289,7 @@ def _call_llm(ask: Ask, user_prompt: str, llm: LLMClient) -> LLMAnswer:
     while True:
         ask.llm_calls += 1
         try:
-            raw = llm.complete_json(SYSTEM_PROMPT, prompt, deadline.remaining())
+            raw = llm.complete_json(_system(s), prompt, deadline.remaining())
             out = parse_llm_output(raw)
             break
         except ConnectionDropped as exc:

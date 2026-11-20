@@ -1,0 +1,147 @@
+{
+  "run": {
+    "provider": "groq",
+    "model": "qwen/qwen3.8-27b",
+    "retrieval_mode": "vector",
+    "rerank": "off",
+    "rewrite_on_miss": "on",
+    "tau": 0.38,
+    "top_k": 3,
+    "pool": 8,
+    "cases": 47,
+    "commit": "e037c07",
+    "timestamp": "2026-11-20T19:01:37+00:00",
+    "repeats": 1,
+    "paired": "round 1 only (off)"
+  },
+  "summary": {
+    "total": 47,
+    "passed": 38,
+    "pass_rate": 0.809
+  },
+  "by_category": {
+    "asymmetric-silence": {
+      "total": 3,
+      "pass": 3
+    },
+    "cross-company": {
+      "total": 3,
+      "pass": 3
+    },
+    "direct": {
+      "total": 6,
+      "pass": 4
+    },
+    "distractor": {
+      "total": 4,
+      "pass": 4
+    },
+    "holdout": {
+      "total": 12,
+      "pass": 6
+    },
+    "injection": {
+      "total": 4,
+      "pass": 4
+    },
+    "multi-section": {
+      "total": 1,
+      "pass": 1
+    },
+    "paired-silence": {
+      "total": 2,
+      "pass": 2
+    },
+    "paraphrase": {
+      "total": 3,
+      "pass": 2
+    },
+    "policy-says-no": {
+      "total": 2,
+      "pass": 2
+    },
+    "universal-silence": {
+      "total": 3,
+      "pass": 3
+    },
+    "versioning": {
+      "total": 4,
+      "pass": 4
+    }
+  },
+  "metrics": {
+    "retrieval_hit_at_3": 0.895,
+    "citation_accuracy": 1.0,
+    "key_fact_accuracy": 0.967,
+    "not_covered_precision": 0.529,
+    "not_covered_recall": 1.0,
+    "not_covered_by_gate": {
+      "llm_not_covered": 7,
+      "tau": 10
+    },
+    "gate_as_expected": 0.833,
+    "false_refusals": [
+      "hold-kes-monday-cutoff",
+      "hold-nim-urgent-approval",
+      "hold-saf-6km",
+      "hold-saf-gate",
+      "hold-saf-suv",
+      "kes-noshow-fine",
+      "nim-weekend-typo",
+      "saf-cutoff"
+    ],
+    "leaks": 0,
+    "injection_passed": "4/4",
+    "try_again": 0,
+    "connection_retries": 0,
+    "max_llm_calls": 1,
+    "total_llm_calls": 37,
+    "max_citations": 2,
+    "latency_ms": {
+      "note": "in-process (retrieval + LLM), excludes HTTP; see scripts/bench.py for API",
+      "llm_cases_p50": 505,
+      "llm_cases_p95": 747,
+      "all_cases_p95": 727,
+      "max": 828
+    }
+  },
+  "failures": {
+    "kes-noshow-fine": [
+      "status not_covered != expected answered",
+      "missing one of ['200']"
+    ],
+    "saf-cutoff": [
+      "status not_covered != expected answered",
+      "missing one of ['2 hours', 'two hours']"
+    ],
+    "nim-weekend-typo": [
+      "status not_covered != expected answered",
+      "missing one of ['manager']"
+    ],
+    "hold-nim-urgent-approval": [
+      "status not_covered != expected answered",
+      "missing one of ['same-day', 'same day', \"on the manager's behalf\", \"on your manager's behalf\", 'on behalf']"
+    ],
+    "hold-kes-monday-cutoff": [
+      "status not_covered != expected answered",
+      "missing one of ['friday']",
+      "missing one of ['6:00 PM', '6 PM', '18:00']"
+    ],
+    "hold-saf-6km": [
+      "status not_covered != expected answered",
+      "missing one of ['8 km', '8km', 'eight km']",
+      "missing one of ['not eligible', \"aren't eligible\", 'are not eligible', \"don't qualify\", 'do not qualify', 'not qualify']"
+    ],
+    "hold-saf-suv": [
+      "status not_covered != expected answered",
+      "missing one of ['SUV']"
+    ],
+    "hold-saf-late-cancel": [
+      "missing one of ['no-show', 'no show']"
+    ],
+    "hold-saf-gate": [
+      "status not_covered != expected answered",
+      "missing one of ['gate 2']"
+    ]
+  }
+}
