@@ -65,7 +65,7 @@ Client ──► FastAPI ──► auth.py (verify, pin alg, require claims)    
              │      7. validate schema + citations                            │
              │      8. on bad JSON → 1 repair call if ≥ 1.0 s left, else TRY_AGAIN
              │                                                                │
-             ├─ POST /admin/ingest (role=admin)                         ✅     │
+             ├─ POST /admin/ingest (role=admin, multipart field `file`) ✅ [v3 D29]
              │      company = token's company_id (never from the file/body)  │
              │      1. size check; parse header → company name, title, version
              │      2. header company name must match token's company   [v3] │
@@ -147,7 +147,7 @@ Rules:
 | LLM timeout / 5xx / 429 quota / no API key | `try_again`, HTTP 503, never a half answer | 🔜 |
 | LLM returns invalid JSON | 1 repair call if time allows; still bad → `try_again` | 🔜 |
 | LLM cites a chunk it wasn't given | Citation dropped; if none left → `not_covered` | 🔜 |
-| Ingest: bad header / wrong company / empty / too large | **[v3] 422** ❓ (v2 said 400), nothing changes | ✅ |
+| Ingest: bad header / wrong company / empty / too large / not UTF-8 / extra form field | **[v3] 422** (D32), nothing changes | ✅ |
 | Ingest: version ≤ active | 409, nothing changes | ✅ |
 | Ingest: failure mid-write | 500 "previous version still active"; old version still answers | ✅ |
 
@@ -266,7 +266,7 @@ app/
   llm/fake.py        scripted ✅ + extractive 🔜
 scripts/issue_token.py   mint employee/admin tokens for any company ✅
 scripts/bench.py         p50/p95 latency against the running API 🔜
-data/policies/seed/{nimbus,kestrel,saffron}/v1.md     ✅  [v3: per-company folders ❓]
+data/policies/seed/{nimbus,kestrel,saffron}/v1.md     ✅  [v3: per-company folders, D31]
 data/policies/updates/nimbus/v2.md                    ✅
 eval/cases.jsonl  eval/results.jsonl  eval/report.json  eval/run_eval.py (skeleton)
 docs/ARCHITECTURE.md  docs/EVAL_REPORT.md 🔜
@@ -279,7 +279,7 @@ Dockerfile  docker-compose.yml  .env.example  README.md (skeleton)
 `# <Company Name> — <Doc Title> (Version N, effective YYYY-MM-DD)`, then `## <n>. <Section Title>`
 (optional `### <n.m> <Title>`). The company is always the **admin token's** company; the company
 name in the header is only a consistency check (must equal the allow-list display name), so an admin
-cannot load another company's document into their own tenant. ❓ (v2 said the header has no company)
+cannot load another company's document into their own tenant (D30).
 
 | File | Doc title | Sections | Chunk ids |
 |---|---|---|---|
@@ -364,7 +364,7 @@ Key sections for the eval:
 | D26 | **[v3]** Long sections split by paragraph at 150 words, header on every piece (replaces "fail test above ~400 tokens") | Agreed, ✅ | User instruction 11:00; MiniLM truncates at 256 tokens |
 | D27 | **[v3]** Per-company in-process ingest lock | Implemented, ✅ | Concurrent same-version ingests can't clobber a collection |
 | D28 | **[v3]** `GET /admin/policy` shows the admin's active version + history | Implemented, ✅ | Demo + debugging; admin-only, own company |
-| D29 | **[v3]** Ingest body format: JSON `{"document": "..."}` (built) vs multipart `.md` upload (v2) | ❓ Open | Multipart is nicer for curl; needs `python-multipart` |
-| D30 | **[v3]** Header carries company name, checked against token company (built) vs no company in header (v2) | ❓ Open | Extra guard against loading the wrong file |
-| D31 | **[v3]** Policy files: `seed/<co>/v1.md` (built) vs `seed/<co>_v1.md` (v2 roadmap) | ❓ Open | Cosmetic; folder name = company_id |
-| D32 | **[v3]** Bad ingest document → 422 (built) vs 400 (v2) | ❓ Open | 422 matches FastAPI's validation errors |
+| D29 | **[v3]** Ingest body = multipart upload, single form field `file`; any other form field (e.g. `company_id`) → 422 | Agreed, 🔜 | `curl -F file=@…` is clean in demo/viva; extra-field rejection keeps "no client override" explicit |
+| D30 | **[v3]** Header carries company name, cross-checked against the token's company (token stays the identity source) | Agreed, ✅ | Guard against an admin loading the wrong company's file |
+| D31 | **[v3]** Policy files in per-company folders: `seed/<co>/v1.md`, `updates/<co>/v2.md` | Agreed, ✅ | Folder name = company_id, no filename parsing |
+| D32 | **[v3]** Bad ingest document (bad header, wrong company, empty, too large, not UTF-8) → 422 | Agreed, ✅ | One code for "understood but content invalid", same as FastAPI validation |
