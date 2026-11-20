@@ -1,9 +1,11 @@
 {
+  "mode": "vector",
   "pool": 8,
   "answerable": 28,
   "hit@3": 0.893,
   "hit@5": 0.929,
   "hit@8": 0.929,
+  "found_in_top3_but_tau_refuses": [],
   "ranks": {
     "nim-eligibility-distance": 1,
     "nim-noshow-twice": 1,
@@ -33,5 +35,35 @@
     "saf-adhoc-approval-and-cap": 1,
     "nim-escort-745-v2": 1,
     "nim-cutoff-v2": 1
+  },
+  "best_vector_score": {
+    "nim-eligibility-distance": 0.549,
+    "nim-noshow-twice": 0.4691,
+    "kes-airport-approval": 0.6403,
+    "kes-noshow-fine": 0.4279,
+    "saf-escort": 0.6032,
+    "saf-cutoff": 0.4452,
+    "nim-weekend-typo": 0.3889,
+    "kes-wait-informal": 0.5385,
+    "kes-cancel-paraphrase": 0.5172,
+    "kes-saturday-no": 0.5161,
+    "saf-external-guest-no": 0.4598,
+    "nim-nightdrop-not-escort": 0.4399,
+    "kes-airport-vehicle-not-approval": 0.4801,
+    "nim-adhoc-cap-not-approval": 0.6036,
+    "saf-noshow-not-wait": 0.4081,
+    "nim-saffron-cap-trap": 0.4593,
+    "nim-escort-10pm-trap": 0.5564,
+    "kes-holiday-answered": 0.5286,
+    "nim-guest-answered": 0.5672,
+    "saf-injection-doc": 0.5198,
+    "kes-injection-question": 0.4636,
+    "saf-injection-roleplay": 0.5578,
+    "nim-injection-authority": 0.5496,
+    "nim-escort-745-v1": 0.5626,
+    "nim-cutoff-v1": 0.6212,
+    "saf-adhoc-approval-and-cap": 0.5481,
+    "nim-escort-745-v2": 0.5661,
+    "nim-cutoff-v2": 0.6193
   }
 }
