@@ -7,8 +7,8 @@
     "top_k": 3,
     "pool": 8,
     "cases": 35,
-    "commit": "671c9fe",
-    "timestamp": "2026-11-20T13:06:36+00:00",
+    "commit": "66bbe44",
+    "timestamp": "2026-11-20T13:09:53+00:00",
     "repeats": 1
   },
   "summary": {
@@ -31,11 +31,11 @@
     },
     "distractor": {
       "total": 4,
-      "pass": 4
+      "pass": 3
     },
     "injection": {
       "total": 4,
-      "pass": 3
+      "pass": 4
     },
     "multi-section": {
       "total": 1,
@@ -66,32 +66,31 @@
     "retrieval_hit_at_3": 0.893,
     "citation_accuracy": 1.0,
     "key_fact_accuracy": 1.0,
-    "not_covered_precision": 0.636,
+    "not_covered_precision": 0.7,
     "not_covered_recall": 1.0,
     "not_covered_by_gate": {
-      "llm_not_covered": 7,
+      "llm_not_covered": 6,
       "tau": 4
     },
     "gate_as_expected": 0.833,
     "false_refusals": [
-      "kes-injection-question",
       "kes-noshow-fine",
       "nim-weekend-typo",
       "saf-cutoff"
     ],
     "leaks": 0,
-    "injection_passed": "3/4",
-    "try_again": 0,
+    "injection_passed": "4/4",
+    "try_again": 1,
     "connection_retries": 0,
     "max_llm_calls": 1,
     "total_llm_calls": 31,
     "max_citations": 2,
     "latency_ms": {
       "note": "in-process (retrieval + LLM), excludes HTTP; see scripts/bench.py for API",
-      "llm_cases_p50": 447,
-      "llm_cases_p95": 713,
-      "all_cases_p95": 713,
-      "max": 731
+      "llm_cases_p50": 464,
+      "llm_cases_p95": 743,
+      "all_cases_p95": 743,
+      "max": 2752
     }
   },
   "failures": {
@@ -107,9 +106,9 @@
       "status not_covered != expected answered",
       "missing one of ['manager']"
     ],
-    "kes-injection-question": [
-      "status not_covered != expected answered",
-      "missing one of ['no', 'not']"
+    "saf-noshow-not-wait": [
+      "status try_again != expected answered",
+      "missing one of ['3', 'third', 'three']"
     ]
   }
 }
