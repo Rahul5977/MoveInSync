@@ -3,12 +3,13 @@
     "provider": "fake",
     "model": "extractive-fake",
     "retrieval_mode": "vector",
+    "rewrite_on_miss": "on",
     "tau": 0.38,
     "top_k": 3,
     "pool": 8,
     "cases": 35,
-    "commit": "4e970d3",
-    "timestamp": "2026-11-20T15:23:45+00:00",
+    "commit": "45fe782",
+    "timestamp": "2026-11-20T19:19:02+00:00",
     "repeats": 1
   },
   "summary": {
@@ -82,10 +83,10 @@
     "max_citations": 1,
     "latency_ms": {
       "note": "in-process (retrieval + LLM), excludes HTTP; see scripts/bench.py for API",
-      "llm_cases_p50": 47,
-      "llm_cases_p95": 66,
-      "all_cases_p95": 66,
-      "max": 71
+      "llm_cases_p50": 43,
+      "llm_cases_p95": 46,
+      "all_cases_p95": 47,
+      "max": 47
     }
   },
   "failures": {
