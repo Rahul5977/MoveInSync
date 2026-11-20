@@ -1,7 +1,7 @@
 # Renders the demo video with VHS (https://github.com/charmbracelet/vhs): no screen capture.
 #   docker compose down -v && docker compose up --build -d   # Nimbus must start on v1
 #   vhs scripts/demo.tape                                     # -> recordings/demo.mp4
-# Uses ~4 Groq calls. Timings leave time to read each answer; total ~2 minutes.
+# Uses ~5 Groq calls. Timings leave time to read each answer; total ~2 minutes.
 
 Output recordings/demo.mp4
 Output recordings/demo.gif

@@ -2,7 +2,8 @@
 # 2-minute demo of the Commute Policy Assistant, for a screen recording.
 #   docker compose down -v && docker compose up --build     (in another terminal)
 #   scripts/demo.sh
-# Uses ~4 Groq calls per run (steps 2, 4, 5, 10; step 3 is refused with 0 LLM calls).
+# Uses ~5 Groq calls per run (steps 2, 4 (two: rewrite on a miss, D61), 5, 10; step 3 is refused
+# with 0 LLM calls).
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -91,7 +92,7 @@ step "3. Nimbus employee: pet dog in the cab? Not in the policy: refused with 0 
 ask "$NIMBUS" "Can I bring my pet dog in the cab?"
 pause
 
-step "4. Kestrel employee asks about Nimbus's rule: refused, Kestrel can't see Nimbus's policy" "Expect: not covered - never answers from another company's policy"
+step "4. Kestrel employee asks about Nimbus's rule: refused, Kestrel can't see Nimbus's policy" "Expect: not covered - a 2nd search (D61) still only sees Kestrel's policy - 2 LLM calls max"
 ask "$KESTREL" "What time does Nimbus Software require a security escort after?"
 pause
 
@@ -128,9 +129,10 @@ jq -r '"Pass rate: \(.summary.passed)/\(.summary.total) (\(.summary.pass_rate * 
   "Not-covered recall: \(.metrics.not_covered_recall)",
   "Max LLM calls per question: \(.metrics.max_llm_calls) (budget <= 2)",
   "p95 latency (in-process, LLM cases): \(.metrics.latency_ms.llm_cases_p95) ms"' eval/report.json
-if [ -f eval/bench_groq_vector.json ]; then
+if [ -f eval/bench_groq_rewrite_on.json ]; then
   jq -r '"p95 latency (Docker, over HTTP, answered): \(.client_ms_by_status.answered.p95) ms"' \
-    eval/bench_groq_vector.json
+    eval/bench_groq_rewrite_on.json
 fi
+echo "Held-out (12 new questions): 7/12 - see docs/EVAL_REPORT.md section 3.5"
 echo
 echo "Details: docs/EVAL_REPORT.md"
