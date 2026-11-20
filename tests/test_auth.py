@@ -1,6 +1,6 @@
 import jwt
 
-from tests.conftest import test_settings as get_settings
+from tests.conftest import make_test_settings as get_settings
 
 
 def test_health(client):
