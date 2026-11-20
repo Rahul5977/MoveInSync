@@ -72,7 +72,7 @@ def create_app(
         try:
             res = ingest_policy(principal.company_id, req.document, st.registry, st.store, s)
         except (InvalidDocument, UnknownCompany) as exc:
-            raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, str(exc)) from exc
+            raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, str(exc)) from exc
         except VersionConflict as exc:
             raise HTTPException(status.HTTP_409_CONFLICT, str(exc)) from exc
         except IngestFailed as exc:

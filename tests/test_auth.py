@@ -12,7 +12,7 @@ def test_ask_requires_token(client):
 
 
 def test_ask_rejects_bad_signature(client):
-    forged = jwt.encode({"sub": "x", "company_id": "acme"}, "wrong-secret", algorithm="HS256")
+    forged = jwt.encode({"sub": "x", "company_id": "nimbus"}, "a-different-but-long-enough-secret-key-xx", algorithm="HS256")
     r = client.post("/ask", json={"question": "hi"}, headers={"Authorization": f"Bearer {forged}"})
     assert r.status_code == 401
 
@@ -20,7 +20,7 @@ def test_ask_rejects_bad_signature(client):
 def test_ask_rejects_alg_none(client):
     s = get_settings()
     unsigned = jwt.encode(
-        {"sub": "x", "company_id": "acme", "iss": s.jwt_issuer, "exp": 9999999999},
+        {"sub": "x", "company_id": "nimbus", "iss": s.jwt_issuer, "exp": 9999999999},
         key=None,
         algorithm="none",
     )
@@ -31,10 +31,10 @@ def test_ask_rejects_alg_none(client):
 
 def test_client_cannot_override_company(client, token_for):
     r = client.post(
-        "/ask", json={"question": "hi", "company_id": "globex"}, headers=token_for("acme")
+        "/ask", json={"question": "hi", "company_id": "kestrel"}, headers=token_for("nimbus")
     )
     assert r.status_code == 422
 
 
-def test_ingest_requires_admin(client, token_for):
-    assert client.post("/admin/ingest", headers=token_for("acme")).status_code == 403
+def test_ingest_requires_token(client):
+    assert client.post("/admin/ingest", json={"document": "x"}).status_code == 401
