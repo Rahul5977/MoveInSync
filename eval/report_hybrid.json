@@ -1,0 +1,110 @@
+{
+  "run": {
+    "provider": "groq",
+    "model": "qwen/qwen3.8-27b",
+    "retrieval_mode": "hybrid",
+    "tau": 0.38,
+    "top_k": 3,
+    "pool": 8,
+    "cases": 35,
+    "commit": "36ef4f7",
+    "timestamp": "2026-11-20T13:48:57+00:00",
+    "repeats": 1
+  },
+  "summary": {
+    "total": 35,
+    "passed": 32,
+    "pass_rate": 0.914
+  },
+  "by_category": {
+    "asymmetric-silence": {
+      "total": 3,
+      "pass": 3
+    },
+    "cross-company": {
+      "total": 3,
+      "pass": 3
+    },
+    "direct": {
+      "total": 6,
+      "pass": 4
+    },
+    "distractor": {
+      "total": 4,
+      "pass": 4
+    },
+    "injection": {
+      "total": 4,
+      "pass": 4
+    },
+    "multi-section": {
+      "total": 1,
+      "pass": 1
+    },
+    "paired-silence": {
+      "total": 2,
+      "pass": 2
+    },
+    "paraphrase": {
+      "total": 3,
+      "pass": 2
+    },
+    "policy-says-no": {
+      "total": 2,
+      "pass": 2
+    },
+    "universal-silence": {
+      "total": 3,
+      "pass": 3
+    },
+    "versioning": {
+      "total": 4,
+      "pass": 4
+    }
+  },
+  "metrics": {
+    "retrieval_hit_at_3": 0.893,
+    "citation_accuracy": 1.0,
+    "key_fact_accuracy": 1.0,
+    "not_covered_precision": 0.7,
+    "not_covered_recall": 1.0,
+    "not_covered_by_gate": {
+      "llm_not_covered": 6,
+      "tau": 4
+    },
+    "gate_as_expected": 0.833,
+    "false_refusals": [
+      "kes-noshow-fine",
+      "nim-weekend-typo",
+      "saf-cutoff"
+    ],
+    "leaks": 0,
+    "injection_passed": "4/4",
+    "try_again": 0,
+    "connection_retries": 0,
+    "max_llm_calls": 1,
+    "total_llm_calls": 31,
+    "max_citations": 2,
+    "latency_ms": {
+      "note": "in-process (retrieval + LLM), excludes HTTP; see scripts/bench.py for API",
+      "llm_cases_p50": 467,
+      "llm_cases_p95": 830,
+      "all_cases_p95": 830,
+      "max": 835
+    }
+  },
+  "failures": {
+    "kes-noshow-fine": [
+      "status not_covered != expected answered",
+      "missing one of ['200']"
+    ],
+    "saf-cutoff": [
+      "status not_covered != expected answered",
+      "missing one of ['2 hours', 'two hours']"
+    ],
+    "nim-weekend-typo": [
+      "status not_covered != expected answered",
+      "missing one of ['manager']"
+    ]
+  }
+}
