@@ -86,6 +86,55 @@ def render_citation(c: RetrievedChunk) -> Citation:
     )
 
 
+# ---------------------------------------------------------------- one question, step by step
+#
+# answer_question() reads top to bottom as the pipeline. Each step is a small function; any step
+# can end the request early by raising Stop(status, gate). To change one behaviour in the viva,
+# edit one step:
+#   _retrieve        which chunks we search (company from the JWT, active version only)
+#   _tau_gate        "clearly off-topic" -> not covered with 0 LLM calls
+#   _call_llm        the LLM call, plus at most one repair call or one connection retry
+#   _valid_citations which cited ids we accept (only ids we sent, at most top_k)
+
+
+class Stop(Exception):
+    """Ends the request early with a final status (not_covered / try_again)."""
+
+    def __init__(self, status: AnswerStatus, gate: str, error: str | None = None) -> None:
+        super().__init__(gate)
+        self.status, self.gate, self.error = status, gate, error
+
+
+def not_covered(gate: str) -> Stop:
+    return Stop(AnswerStatus.NOT_COVERED, gate)
+
+
+def try_again(gate: str, error: str) -> Stop:
+    return Stop(AnswerStatus.TRY_AGAIN, gate, error)
+
+
+@dataclass
+class Ask:
+    """State of one question as it moves through the steps."""
+
+    settings: Settings
+    deadline: Deadline
+    trace: Trace = field(default_factory=Trace)
+    llm_calls: int = 0
+    version: int | None = None
+
+    def response(self, status: AnswerStatus, gate: str, answer: str, citations=()):
+        self.trace.gate = gate
+        meta = AnswerMeta(
+            llm_calls=self.llm_calls,
+            latency_ms=self.deadline.elapsed_ms(),
+            policy_version=self.version,
+            retrieval_mode=self.settings.retrieval_mode,
+        )
+        resp = AskResponse(status=status, answer=answer, citations=list(citations), meta=meta)
+        return resp, self.trace
+
+
 def answer_question(
     principal: Principal,
     question: str,
@@ -96,102 +145,99 @@ def answer_question(
     clock: Clock = time.monotonic,
     bm25: Bm25Cache | None = None,
 ) -> tuple[AskResponse, Trace]:
-    deadline = Deadline(settings.request_deadline_s, clock)
-    trace = Trace()
-    llm_calls = 0
-    version: int | None = None
-
-    def respond(
-        status: AnswerStatus, gate: str, answer: str, cites=()
-    ) -> tuple[AskResponse, Trace]:
-        trace.gate = gate
-        meta = AnswerMeta(
-            llm_calls=llm_calls,
-            latency_ms=deadline.elapsed_ms(),
-            policy_version=version,
-            retrieval_mode=settings.retrieval_mode,
-        )
-        return AskResponse(status=status, answer=answer, citations=list(cites), meta=meta), trace
-
-    def not_covered(gate: str):
-        return respond(AnswerStatus.NOT_COVERED, gate, NOT_COVERED_MSG)
-
-    def try_again(gate: str, error: str):
-        trace.error = error
-        log.warning("try_again (%s): %s", gate, error)
-        return respond(AnswerStatus.TRY_AGAIN, gate, TRY_AGAIN_MSG)
-
-    # 1. Retrieval: company from the JWT only; active collection only.
+    ask = Ask(settings, Deadline(settings.request_deadline_s, clock))
     try:
-        pool, version, best_vector = search(
-            principal.company_id,
+        pool = _retrieve(ask, principal.company_id, question, registry, store, bm25)  # 1
+        sent = pool[: settings.retrieval_top_k]  # 2. only the top k go to the model
+        ask.trace.sent_ids = list(dict.fromkeys(c.chunk_id for c in sent))
+        out = _call_llm(ask, build_user_prompt(question, sent), llm)  # 3
+        if not out.covered:
+            raise not_covered("llm_not_covered")
+        citations = _valid_citations(ask, out, sent)  # 4
+    except Stop as stop:
+        if stop.status is AnswerStatus.TRY_AGAIN:
+            ask.trace.error = stop.error
+            log.warning("try_again (%s): %s", stop.gate, stop.error)
+            return ask.response(stop.status, stop.gate, TRY_AGAIN_MSG)
+        return ask.response(stop.status, stop.gate, NOT_COVERED_MSG)
+
+    # We escape & < > in the prompt, so the model may echo &amp; etc. (D36).
+    answer = html.unescape(out.answer.strip())
+    return ask.response(AnswerStatus.ANSWERED, "answered", answer, citations)
+
+
+def _retrieve(ask: Ask, company_id, question, registry, store, bm25) -> list[RetrievedChunk]:
+    """Step 1: search ONLY this company's active collection, then apply the tau gate."""
+    s = ask.settings
+    try:
+        pool, ask.version, best_vector = search(
+            company_id,
             question,
             registry,
             store,
-            settings.retrieval_pool,
-            mode=settings.retrieval_mode,
+            s.retrieval_pool,
+            mode=s.retrieval_mode,
             bm25=bm25,
-            rrf_k=settings.rrf_k,
+            rrf_k=s.rrf_k,
         )
     except Exception as exc:  # store unavailable etc. -> user gets a clear "try again"
         log.exception("Retrieval failed")
-        return try_again("retrieval_error", type(exc).__name__)
-    if version is None:
-        return not_covered("no_policy")
-    trace.retrieved_ids = [c.chunk_id for c in pool]
+        raise try_again("retrieval_error", type(exc).__name__) from exc
+    if ask.version is None:
+        raise not_covered("no_policy")
+    ask.trace.retrieved_ids = [c.chunk_id for c in pool]
+    _tau_gate(ask, pool, best_vector)
+    return pool
 
-    # 2. Tau gate on the best VECTOR score (both modes, D56): off-topic -> 0 LLM calls.
-    trace.best_score = best_vector
-    if not pool or best_vector is None or best_vector < settings.retrieval_min_score:
-        return not_covered("tau")
 
-    # 3. Send the top-k as data.
-    sent = pool[: settings.retrieval_top_k]
-    by_id = {c.chunk_id: c for c in sent}
-    trace.sent_ids = list(by_id)
-    user_prompt = build_user_prompt(question, sent)
+def _tau_gate(ask: Ask, pool: list[RetrievedChunk], best_vector: float | None) -> None:
+    """Tau gate (D5/D52) on the best VECTOR score (both modes, D56): off-topic -> 0 LLM calls."""
+    ask.trace.best_score = best_vector
+    if not pool or best_vector is None or best_vector < ask.settings.retrieval_min_score:
+        raise not_covered("tau")
 
-    # 4. LLM call 1 (+ at most one repair call, only if the deadline allows).
-    if deadline.remaining() < settings.llm_min_remaining_s:
-        return try_again("deadline", "no time left for the LLM call")
+
+def _call_llm(ask: Ask, user_prompt: str, llm: LLMClient) -> LLMAnswer:
+    """Step 3: at most 2 calls in total (D6, D20, D53).
+
+    Call 2 happens only as a REPAIR (invalid output) or a RETRY (dropped connection), never both,
+    and only if >= repair_min_remaining_s of the deadline is left.
+    """
+    s, deadline = ask.settings, ask.deadline
+    if deadline.remaining() < s.llm_min_remaining_s:
+        raise try_again("deadline", "no time left for the LLM call")
     prompt = user_prompt
     while True:
-        llm_calls += 1
+        ask.llm_calls += 1
         try:
             raw = llm.complete_json(SYSTEM_PROMPT, prompt, deadline.remaining())
             out = parse_llm_output(raw)
             break
         except ConnectionDropped as exc:
             # D53: no answer was generated; retry once (counted) if the slot and time allow.
-            if llm_calls >= 2 or deadline.remaining() < settings.repair_min_remaining_s:
-                return try_again("llm_error", str(exc))
-            trace.retried = str(exc)
+            if ask.llm_calls >= 2 or deadline.remaining() < s.repair_min_remaining_s:
+                raise try_again("llm_error", str(exc)) from exc
+            ask.trace.retried = str(exc)
             log.info("retrying LLM call after %s", exc)
         except LLMError as exc:
-            return try_again("llm_error", str(exc))
+            raise try_again("llm_error", str(exc)) from exc
         except (InvalidOutput, ModelOutputError) as exc:
             if isinstance(exc, ModelOutputError):
                 raw = exc.partial
-            if llm_calls >= 2:
-                return try_again("invalid_output", f"invalid after repair: {exc}")
-            if deadline.remaining() < settings.repair_min_remaining_s:
-                return try_again("invalid_output", f"invalid, no time to repair: {exc}")
+            if ask.llm_calls >= 2:
+                raise try_again("invalid_output", f"invalid after repair: {exc}") from exc
+            if deadline.remaining() < s.repair_min_remaining_s:
+                raise try_again("invalid_output", f"invalid, no time to repair: {exc}") from exc
             prompt = build_repair_prompt(user_prompt, raw, str(exc))
+    ask.trace.model_cited_ids = list(out.cited_ids)
+    return out
 
-    trace.model_cited_ids = list(out.cited_ids)
-    if not out.covered:
-        return not_covered("llm_not_covered")
 
-    # 5. Citations: only ids we sent, deduplicated, at most top_k; rendered from metadata.
-    valid = [cid for cid in dict.fromkeys(out.cited_ids) if cid in by_id][
-        : settings.retrieval_top_k
-    ]
+def _valid_citations(ask: Ask, out: LLMAnswer, sent: list[RetrievedChunk]) -> list[Citation]:
+    """Step 4: only ids we sent, deduplicated, at most top_k; text rendered from metadata."""
+    by_id = {c.chunk_id: c for c in sent}
+    valid = [cid for cid in dict.fromkeys(out.cited_ids) if cid in by_id]
+    valid = valid[: ask.settings.retrieval_top_k]
     if not valid:
-        return not_covered("no_valid_citation")
-    return respond(
-        AnswerStatus.ANSWERED,
-        "answered",
-        # We escape & < > in the prompt, so the model may echo &amp; etc. (D36).
-        html.unescape(out.answer.strip()),
-        [render_citation(by_id[cid]) for cid in valid],
-    )
+        raise not_covered("no_valid_citation")
+    return [render_citation(by_id[cid]) for cid in valid]
