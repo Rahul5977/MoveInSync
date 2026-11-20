@@ -1,0 +1,35 @@
+# --- Markdown: ignore everything except README and policy documents ---
+*.md
+!README.md
+!data/
+!data/**/
+!data/**/*.md
+
+# --- Case study brief (not part of the submission) ---
+*.docx
+
+# --- Secrets ---
+.env
+.env.*
+!.env.example
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+*.egg-info/
+.coverage
+htmlcov/
+
+# --- Runtime state (rebuilt from data/ on startup) ---
+var/
+*.sqlite3
+chroma/
+
+# --- OS / editor ---
+.DS_Store
+.idea/
+.vscode/
