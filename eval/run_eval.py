@@ -35,7 +35,7 @@ from app.rag.retriever import retrieve
 from app.schemas import Principal
 from app.store.registry import Registry
 from app.store.vector import VectorStore
-from eval.scoring import percentile, score_case
+from eval.scoring import contains, percentile, score_case
 
 EVAL_DIR = Path(__file__).resolve().parent
 CASES = EVAL_DIR / "cases.jsonl"
@@ -55,7 +55,20 @@ def load_cases(path: Path = CASES) -> list[dict]:
     bad = [r["id"] for r in rows if r["input"]["phase"] not in PHASES]
     if bad:
         sys.exit(f"Unknown phase in cases: {bad}")
+    violations = question_terms_forbidden(rows)
+    if violations:
+        sys.exit(f"D51: must_not_include terms that appear in the question: {violations}")
     return rows
+
+
+def question_terms_forbidden(rows: list[dict]) -> dict[str, list[str]]:
+    """D51: a correct answer may echo the question, so its terms can't be forbidden."""
+    out = {}
+    for r in rows:
+        hits = [t for t in r["expected"]["must_not_include"] if contains(r["input"]["question"], t)]
+        if hits:
+            out[r["id"]] = hits
+    return out
 
 
 def choose_provider(requested: str, settings: Settings) -> str:

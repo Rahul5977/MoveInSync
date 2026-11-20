@@ -88,3 +88,15 @@ def test_sweep_picks_highest_tau_without_false_refusals(settings, tmp_path, monk
     row = next(r for r in out["sweep"] if r["tau"] == out["chosen_tau"])
     assert row["false_refusals"] == [] and "junk" in row["not_covered_caught"]
     assert (tmp_path / "tau_sweep.json").exists()
+
+
+def test_real_cases_file_is_valid():
+    """eval/cases.jsonl: unique ids, known phases, D51 (no question terms forbidden)."""
+    cases = run_eval.load_cases()
+    assert len(cases) == 33
+    assert run_eval.question_terms_forbidden(cases) == {}
+
+
+def test_d51_violation_detected():
+    bad = _case("x", "nimbus", "Is it after 10 PM?", "answered", exc=["10 PM"])
+    assert run_eval.question_terms_forbidden([bad]) == {"x": ["10 PM"]}
