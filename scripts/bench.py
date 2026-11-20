@@ -68,6 +68,7 @@ def main(argv: list[str] | None = None) -> int:
             )
     wall, server, statuses, calls = [], [], Counter(), Counter()
     by_status: dict[str, list[float]] = {}
+    answered_by_calls: dict[int, list[float]] = {}  # D61: 1-call vs 2-call answers
     with httpx.Client(timeout=10) as client:
         for i in range(args.n):
             q = pool[i % len(pool)]
@@ -87,6 +88,8 @@ def main(argv: list[str] | None = None) -> int:
             statuses[body["status"]] += 1
             by_status.setdefault(body["status"], []).append(ms)
             calls[body["meta"]["llm_calls"]] += 1
+            if body["status"] == "answered":
+                answered_by_calls.setdefault(body["meta"]["llm_calls"], []).append(ms)
             print(f"  {i + 1:>3} {co:<8} {body['status']:<12} {ms:7.0f} ms  {q['question'][:60]}")
             if i < args.n - 1:
                 time.sleep(args.throttle)
@@ -116,6 +119,15 @@ def main(argv: list[str] | None = None) -> int:
             for st, v in sorted(by_status.items())
         },
         "llm_calls_histogram": {str(k): v for k, v in sorted(calls.items())},
+        "answered_ms_by_llm_calls": {
+            str(k): {
+                "n": len(v),
+                "p50": round(percentile(v, 50)),
+                "p95": round(percentile(v, 95)),
+                "max": round(max(v)),
+            }
+            for k, v in sorted(answered_by_calls.items())
+        },
         "under_3s_p95": percentile(wall, 95) < 3000,
     }
     (EVAL_DIR / args.out).write_text(json.dumps(out, indent=2))
