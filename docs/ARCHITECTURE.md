@@ -52,7 +52,7 @@ tuned from recorded top scores (eval records `best_score` per case).
            ┌──────────── JWT (HS256): sub, company_id, role, iss, exp ──────┐
 Client ──► FastAPI ──► auth.py (verify, pin alg, require claims)             │
              │                                                                │
-             ├─ GET  /health ──► {"status":"ok"} ✅  (+ active version per company 🔜)
+             ├─ GET  /health ──► {"status":"ok"} ✅  (plain, unauthenticated; D35)
              │                                                                │
              ├─ POST /ask (role=employee|admin) ──► rag/answerer.py   🔜      │
              │      0. validate question (3–500 chars), start 2.8 s deadline  │
@@ -372,5 +372,6 @@ Key sections for the eval:
 | D30 | **[v3]** Header carries company name, cross-checked against the token's company (token stays the identity source) | Agreed, ✅ | Guard against an admin loading the wrong company's file |
 | D31 | **[v3]** Policy files in per-company folders: `seed/<co>/v1.md`, `updates/<co>/v2.md` | Agreed, ✅ | Folder name = company_id, no filename parsing |
 | D32 | **[v3]** Bad ingest document (bad header, wrong company, empty, too large, not UTF-8) → 422 | Agreed, ✅ | One code for "understood but content invalid", same as FastAPI validation |
-| D33 | **[v3]** `role` claim required (missing → 401, no silent default to employee); unknown company/role → 403; auth reads the app's own settings, not the global | Implemented, to review | 401 = not authenticated, 403 = authenticated but not allowed; tests and server can't disagree on secrets |
-| D34 | **[v3]** Reconciler also drops leftover collections of `failed` rows (cleanup that failed at runtime) and never touches the live collection | Implemented, to review | Covers a crash during the except-block cleanup too |
+| D33 | **[v3]** `role` claim required (missing → 401, no silent default to employee); unknown company/role → 403; auth reads the app's own settings, not the global | Agreed, ✅ | 401 = not authenticated, 403 = authenticated but not allowed; tests and server can't disagree on secrets |
+| D34 | **[v3]** Reconciler also drops leftover collections of `failed` rows (cleanup that failed at runtime) and never touches the live collection | Agreed, ✅ | Covers a crash during the except-block cleanup too |
+| D35 | **[v3]** `/health` stays plain `{"status":"ok"}`; per-company versions only via admin-only `/admin/policy` | Agreed, ✅ | Unauthenticated endpoint must not reveal tenant names |
