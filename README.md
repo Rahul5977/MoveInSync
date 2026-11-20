@@ -7,7 +7,7 @@ Software, Kestrel Bank, Saffron Pharma) share one deployment and can never see e
 
 Stack: Python 3.12, FastAPI, Chroma, local ONNX MiniLM embeddings, Groq LLM, JWT.
 
-**Demo video (≈ 2 min):** _[link to be added]_<br>
+**Demo video (≈ 2 min):** [Watch on Google Drive](https://drive.google.com/file/d/1ETWSByFX8reqsg2U8GiBUcVpTQwQ9ezU/view?usp=sharing)<br>
 Rendered with VHS from `scripts/demo.tape` against the live Docker stack (real Groq answers);
 reproducible with `vhs scripts/demo.tape`. The same steps run interactively with `scripts/demo.sh`.
 
