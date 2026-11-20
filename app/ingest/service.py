@@ -9,6 +9,11 @@ ingest_policy():
   Any failure before step 5 leaves the pointer untouched, so the old version keeps answering.
   The half-written collection is dropped best-effort; if that fails it is an unreachable orphan.
 
+reconcile():
+  Runs at startup BEFORE seeding. A process crash mid-ingest never reaches the except block,
+  so it leaves a `pending` row and a half-written collection. Mark such rows `failed` and drop
+  the collections of all pending/failed attempts (never the live one).
+
 seed_policies():
   For each company folder in policies/seed/, ingest it ONLY if the company has no active
   version yet. A restart therefore never rolls a company back (e.g. Nimbus v2 -> v1).
@@ -98,6 +103,26 @@ def ingest_policy(
 
     log.info("Activated %s (%d chunks)", name, count)
     return IngestResult(company_id, policy.version, name, count)
+
+
+def reconcile(registry: Registry, store: VectorStore) -> dict[str, str]:
+    """Clean up after crashed or failed ingests. Returns {collection: outcome}."""
+    outcomes: dict[str, str] = {}
+    for company_id, version, name, status in registry.unfinished():
+        active = registry.active(company_id)
+        if active is not None and active.collection_name == name:
+            outcomes[name] = "kept: is the live collection"  # cannot happen; guard anyway
+            continue
+        if status == "pending":
+            registry.mark_failed(company_id, version)
+        if store.exists(name):
+            store.drop(name)
+            outcomes[name] = f"{status} -> failed, collection dropped"
+        elif status == "pending":
+            outcomes[name] = "pending -> failed"
+    if outcomes:
+        log.warning("Reconciled unfinished ingests: %s", outcomes)
+    return outcomes
 
 
 def seed_policies(registry: Registry, store: VectorStore, settings: Settings) -> dict[str, str]:

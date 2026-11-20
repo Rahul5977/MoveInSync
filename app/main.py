@@ -10,7 +10,13 @@ from pydantic import BaseModel
 
 from app.auth import current_principal, require_admin
 from app.config import Settings, get_settings
-from app.ingest.service import IngestFailed, InvalidDocument, ingest_policy, seed_policies
+from app.ingest.service import (
+    IngestFailed,
+    InvalidDocument,
+    ingest_policy,
+    reconcile,
+    seed_policies,
+)
 from app.schemas import AskRequest, AskResponse, Principal
 from app.store.registry import Registry, VersionConflict
 from app.store.vector import UnknownCompany, VectorStore
@@ -50,6 +56,7 @@ def create_app(
         reg.init_schema()
         vs = store or VectorStore(s.chroma_dir)
         app.state.settings, app.state.registry, app.state.store = s, reg, vs
+        app.state.reconcile_outcomes = reconcile(reg, vs)  # D16: before seeding
         app.state.seed_outcomes = seed_policies(reg, vs, s)
         yield
 

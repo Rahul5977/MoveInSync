@@ -137,6 +137,14 @@ class Registry:
                 c.execute("ROLLBACK")
                 raise
 
+    def unfinished(self) -> list[tuple[str, int, str, str]]:
+        """(company_id, version, collection_name, status) for every pending/failed attempt."""
+        with self._conn() as c:
+            return c.execute(
+                "SELECT company_id, version, collection_name, status FROM policy_versions"
+                " WHERE status IN ('pending', 'failed') ORDER BY company_id, version"
+            ).fetchall()
+
     def history(self, company_id: str) -> list[tuple[int, str, int]]:
         with self._conn() as c:
             return c.execute(

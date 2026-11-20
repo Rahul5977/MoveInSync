@@ -190,3 +190,33 @@ def test_cross_company_retrieval_never_leaks(client):
         for q in (ESCORT_Q, "Who approves an airport trip?", "Can a guest use the cab?"):
             chunks, _ = _retrieve(client, company, q)
             assert chunks and all(c.company_id == company for c in chunks)
+
+
+def test_crash_mid_ingest_reconciled_on_restart(settings, token_for):
+    """Simulate a process kill after half the chunks were written: no except block ran."""
+    from app.ingest.chunker import chunk_policy, parse_policy
+    from app.store.registry import Registry
+
+    reg = Registry(settings.registry_path)
+    store = VectorStore(settings.chroma_dir)
+    chunks = chunk_policy("nimbus", parse_policy(read_policy("updates/nimbus/v2.md")), 150)
+    reg.record_pending("nimbus", 2, "nimbus_v2", "Employee Transport Policy")
+    store.write_chunks("nimbus_v2", chunks[:10], batch_size=8)  # ...then the process "dies"
+    assert dict((v, s) for v, s, _ in reg.history("nimbus"))[2] == "pending"
+
+    with TestClient(create_app(settings)) as client:  # restart
+        st = client.app.state
+        assert st.reconcile_outcomes == {"nimbus_v2": "pending -> failed, collection dropped"}
+        assert not st.store.exists("nimbus_v2")
+        assert dict((v, s) for v, s, _ in st.registry.history("nimbus")) == {
+            1: "active",
+            2: "failed",
+        }
+        chunks, version = _retrieve(client, "nimbus")  # v1 still answers
+        assert version == 1 and all(c.chunk_id.startswith("nimbus_v1_") for c in chunks)
+        # and the crashed version can be ingested cleanly afterwards
+        assert _ingest(client, token_for, "nimbus", "updates/nimbus/v2.md").status_code == 201
+
+
+def test_clean_startup_reconciles_nothing(client):
+    assert client.app.state.reconcile_outcomes == {}
