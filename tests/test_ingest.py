@@ -15,9 +15,13 @@ def _retrieve(client: TestClient, company: str, q: str = ESCORT_Q):
     return retrieve(company, q, st.registry, st.store, k=3)
 
 
+def _upload(content: str | bytes, name: str = "policy.md") -> dict:
+    return {"file": (name, content, "text/markdown")}
+
+
 def _ingest(client, token_for, company: str, path: str):
     return client.post(
-        "/admin/ingest", json={"document": read_policy(path)}, headers=token_for(company, "admin")
+        "/admin/ingest", files=_upload(read_policy(path)), headers=token_for(company, "admin")
     )
 
 
@@ -109,7 +113,7 @@ def test_restart_keeps_v2(settings, token_for):
 def test_employee_cannot_ingest(client, token_for):
     r = client.post(
         "/admin/ingest",
-        json={"document": read_policy("updates/nimbus/v2.md")},
+        files=_upload(read_policy("updates/nimbus/v2.md")),
         headers=token_for("nimbus", "employee"),
     )
     assert r.status_code == 403
@@ -131,18 +135,40 @@ def test_admin_cannot_ingest_another_companys_document(client, token_for):
     assert not client.app.state.store.exists("kestrel_v2")
 
 
-def test_admin_cannot_target_company_via_body(client, token_for):
+def test_admin_cannot_target_company_via_form_field(client, token_for):
     r = client.post(
         "/admin/ingest",
-        json={"document": read_policy("updates/nimbus/v2.md"), "company_id": "nimbus"},
+        files=_upload(read_policy("updates/nimbus/v2.md")),
+        data={"company_id": "nimbus"},
         headers=token_for("kestrel", "admin"),
     )
     assert r.status_code == 422
+    assert "company_id" in r.json()["detail"]
+    assert client.app.state.registry.active("nimbus").version == 1
+
+
+def test_missing_file_rejected(client, token_for):
+    r = client.post("/admin/ingest", data={}, headers=token_for("nimbus", "admin"))
+    assert r.status_code == 422
+
+
+def test_non_utf8_file_rejected(client, token_for):
+    r = client.post(
+        "/admin/ingest", files=_upload(b"\xff\xfe\x00bad"), headers=token_for("nimbus", "admin")
+    )
+    assert r.status_code == 422
+    assert client.app.state.registry.active("nimbus").version == 1
+
+
+def test_reingest_same_version_conflicts(client, token_for):
+    assert _ingest(client, token_for, "nimbus", "updates/nimbus/v2.md").status_code == 201
+    assert _ingest(client, token_for, "nimbus", "updates/nimbus/v2.md").status_code == 409
+    assert client.app.state.registry.active("nimbus").version == 2
 
 
 def test_malformed_document_rejected_old_version_kept(client, token_for):
     r = client.post(
-        "/admin/ingest", json={"document": "just some text"}, headers=token_for("nimbus", "admin")
+        "/admin/ingest", files=_upload("just some text"), headers=token_for("nimbus", "admin")
     )
     assert r.status_code == 422
     assert client.app.state.registry.active("nimbus").version == 1

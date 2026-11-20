@@ -12,7 +12,8 @@ def test_ask_requires_token(client):
 
 
 def test_ask_rejects_bad_signature(client):
-    forged = jwt.encode({"sub": "x", "company_id": "nimbus"}, "a-different-but-long-enough-secret-key-xx", algorithm="HS256")
+    wrong_key = "a-different-but-long-enough-secret-key-xx"
+    forged = jwt.encode({"sub": "x", "company_id": "nimbus"}, wrong_key, algorithm="HS256")
     r = client.post("/ask", json={"question": "hi"}, headers={"Authorization": f"Bearer {forged}"})
     assert r.status_code == 401
 
@@ -37,4 +38,4 @@ def test_client_cannot_override_company(client, token_for):
 
 
 def test_ingest_requires_token(client):
-    assert client.post("/admin/ingest", json={"document": "x"}).status_code == 401
+    assert client.post("/admin/ingest", files={"file": ("p.md", "x")}).status_code == 401

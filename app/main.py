@@ -5,8 +5,8 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from typing import Annotated
 
-from fastapi import Depends, FastAPI, HTTPException, Request, status
-from pydantic import BaseModel, ConfigDict, Field
+from fastapi import Depends, FastAPI, File, HTTPException, Request, UploadFile, status
+from pydantic import BaseModel
 
 from app.auth import current_principal, require_admin
 from app.config import Settings, get_settings
@@ -18,11 +18,16 @@ from app.store.vector import UnknownCompany, VectorStore
 logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
 
 
-class IngestRequest(BaseModel):
-    # No company_id field on purpose: the company is the admin's own, from the JWT.
-    model_config = ConfigDict(extra="forbid")
+async def only_file_field(request: Request) -> None:
+    """Reject any multipart field other than `file` (e.g. a `company_id` override attempt).
 
-    document: str = Field(min_length=1)
+    The company is always the admin's own, from the JWT (D21, D29).
+    """
+    extra = set((await request.form()).keys()) - {"file"}
+    if extra:
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_CONTENT, f"Unexpected form fields: {sorted(extra)}"
+        )
 
 
 class IngestResponse(BaseModel):
@@ -62,15 +67,27 @@ def create_app(
         # company_id comes from `principal` (JWT) only — never from `req`.
         raise HTTPException(status.HTTP_501_NOT_IMPLEMENTED, "answerer not implemented yet")
 
-    @app.post("/admin/ingest", status_code=201, response_model=IngestResponse)
+    @app.post(
+        "/admin/ingest",
+        status_code=201,
+        response_model=IngestResponse,
+        dependencies=[Depends(only_file_field)],
+    )
     def ingest(
-        req: IngestRequest,
+        file: Annotated[UploadFile, File(description="Policy document (.md, UTF-8)")],
         request: Request,
         principal: Annotated[Principal, Depends(require_admin)],
     ) -> IngestResponse:
+        raw = file.file.read(s.max_document_chars * 4 + 1)  # UTF-8 is at most 4 bytes/char
+        try:
+            document = raw.decode("utf-8")
+        except UnicodeDecodeError as exc:
+            raise HTTPException(
+                status.HTTP_422_UNPROCESSABLE_CONTENT, "Policy file must be UTF-8 text"
+            ) from exc
         st = request.app.state
         try:
-            res = ingest_policy(principal.company_id, req.document, st.registry, st.store, s)
+            res = ingest_policy(principal.company_id, document, st.registry, st.store, s)
         except (InvalidDocument, UnknownCompany) as exc:
             raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, str(exc)) from exc
         except VersionConflict as exc:
