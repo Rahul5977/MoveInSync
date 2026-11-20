@@ -575,7 +575,7 @@ def main(argv: list[str] | None = None) -> int:
                 + "\n"
             )
     report_path.write_text(json.dumps(report, indent=2, ensure_ascii=False))
-    if settings.rewrite_on_miss == "on":  # D61: paired "off" from the same run (round 1 only)
+    if args.rewrite == "on":  # D61 experiment: paired "off" from the same run (round 1 only)
         off_results = []
         for case, actual, _score, extra in results:
             off = round1_view(actual)
