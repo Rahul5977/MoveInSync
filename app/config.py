@@ -12,7 +12,7 @@ class Settings(BaseSettings):
 
     llm_provider: Literal["groq", "fake"] = "groq"  # D18: "fake" runs everything without a key
     groq_api_key: str = ""
-    groq_model: str = "llama-3.1-8b-instant"
+    groq_model: str = "qwen/qwen3.8-27b"  # D45; llama-3.1-8b-instant was retired
 
     jwt_secret: str = "dev-only-secret-change-me-32bytes-min!"
     jwt_issuer: str = "moveinsync-dev"
