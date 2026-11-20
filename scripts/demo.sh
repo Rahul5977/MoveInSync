@@ -10,7 +10,11 @@ BASE="${BASE:-http://localhost:8000}"
 ESCORT_Q="Do I get a security escort for a 7:45 PM drop? I'm a woman employee."
 
 bold() { printf '\n\033[1m%s\033[0m\n' "$*"; }
-pause() { read -r -p "Enter for next..." _; }
+# DEMO_CLEAR=1 clears the screen after each pause (used by scripts/demo.tape for the video).
+pause() {
+  read -r -p "Enter for next..." _
+  if [ -n "${DEMO_CLEAR:-}" ]; then clear; fi
+}
 token() { docker compose run --rm -T api uv run --no-sync python -m scripts.issue_token "$@" 2>/dev/null; }
 
 # Show an /ask reply: the fields a viewer cares about.

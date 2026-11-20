@@ -35,3 +35,6 @@ chroma/
 .DS_Store
 .idea/
 .vscode/
+
+# demo video output (scripts/demo.tape)
+recordings/
