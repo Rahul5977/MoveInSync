@@ -108,3 +108,14 @@ def test_percentile_nearest_rank():
     vals = list(range(1, 101))
     assert percentile(vals, 50) == 50 and percentile(vals, 95) == 95 and percentile([], 95) is None
     assert percentile([300, 100, 200], 95) == 300
+
+
+def test_budget_conditions_are_hard_on_every_case():
+    three = ["nimbus_v1_s8_p0", "nimbus_v1_s7_p0", "nimbus_v1_s9_p0"]
+    assert score_case(_case(), _actual(llm_calls=2, citations=three)).passed
+    over_calls = score_case(_case(), _actual(llm_calls=3))
+    assert not over_calls.passed and over_calls.failures[0].startswith("BUDGET")
+    over_cites = score_case(_case(), _actual(citations=[*three, "nimbus_v1_s10_p0"]))
+    assert not over_cites.passed
+    nc = _case(status="not_covered", sections=[], must_include=[], must_not_include=[])
+    assert not score_case(nc, _actual(status="not_covered", citations=[], llm_calls=3)).passed

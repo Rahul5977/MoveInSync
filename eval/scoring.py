@@ -9,7 +9,8 @@ Pass rule for one case:
   AND (if answered) the cited sections include the expected one(s), from the expected version
   AND every must_include group has at least one alternative present
   AND no must_not_include phrase is present
-  AND no retrieved or cited chunk belongs to another company (leak).
+  AND no retrieved or cited chunk belongs to another company (leak)
+  AND llm_calls <= 2 and citations <= 3 (the brief's budgets; hard, on every case).
 The gate that fired (tau vs LLM) is reported, not pass-critical (D49).
 """
 
@@ -17,6 +18,7 @@ import re
 from dataclasses import dataclass, field
 
 CHUNK_ID_RE = re.compile(r"^(?P<co>[a-z0-9]+)_v(?P<v>\d+)_s(?P<sid>[0-9.]+)_p(?P<part>\d+)$")
+MAX_LLM_CALLS, MAX_CITATIONS = 2, 3  # from the brief (D49)
 _CURRENCY_RE = re.compile(r"(?:₹|(?<![a-z0-9])rs\.?|(?<![a-z0-9])inr(?![a-z0-9]))\s*")
 
 
@@ -59,6 +61,11 @@ def score_case(case: dict, actual: dict) -> Score:
     leak = any((p := parse_chunk_id(cid)) is None or p[0] != company for cid in seen)
     if leak:
         failures.append("LEAK: chunk from another company")
+
+    if actual.get("llm_calls", 0) > MAX_LLM_CALLS:
+        failures.append(f"BUDGET: {actual['llm_calls']} LLM calls > {MAX_LLM_CALLS}")
+    if len(actual.get("citations", [])) > MAX_CITATIONS:
+        failures.append(f"BUDGET: {len(actual['citations'])} citations > {MAX_CITATIONS}")
 
     if actual["status"] != exp["status"]:
         failures.append(f"status {actual['status']} != expected {exp['status']}")
