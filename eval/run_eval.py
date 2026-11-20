@@ -30,7 +30,7 @@ from app.config import Settings, get_settings
 from app.ingest.service import ingest_policy, seed_policies
 from app.llm.base import LLMClient
 from app.llm.factory import make_llm
-from app.rag.answerer import answer_question
+from app.rag.answerer import NOT_COVERED_MSG, answer_question
 from app.rag.bm25 import Bm25Cache
 from app.rag.reranker import CrossEncoder, Reranker
 from app.rag.retriever import retrieve, search
@@ -349,11 +349,37 @@ def ask_case(env: Env, llm: LLMClient, case: dict, throttle_s: float) -> tuple[d
         "latency_ms": resp.meta.latency_ms,
         "policy_version": resp.meta.policy_version,
     }
+    if env.settings.rewrite_on_miss == "on":  # D61: what happened after a round-1 miss
+        actual["rewrite"] = {
+            "round1_not_covered": trace.rewrite_triggered or trace.rewrite_skip_reason is not None,
+            "search_query": trace.search_query,
+            "triggered": trace.rewrite_triggered,
+            "skip_reason": trace.rewrite_skip_reason,
+            "round2_retrieved_ids": trace.round2_retrieved_ids,
+            "round2_sent_ids": trace.round2_sent_ids,
+        }
     if trace.retried:
         notes.append(f"retried={trace.retried}")  # D53 connection-level retry (counted)
     if trace.error:
         notes.append(f"error={trace.error}")
     return actual, notes
+
+
+def round1_view(actual: dict) -> dict:
+    """D61 paired "off": the outcome round 1 alone gave (same run, same retrieval, same prompt).
+    A round-1 miss is the fixed not-covered reply after one call; anything else is unchanged."""
+    rw = actual.get("rewrite") or {}
+    if not rw.get("round1_not_covered"):
+        return {k: v for k, v in actual.items() if k != "rewrite"}
+    off = {k: v for k, v in actual.items() if k != "rewrite"}
+    off.update(
+        status="not_covered",
+        answer=NOT_COVERED_MSG,
+        citations=[],
+        gate="llm_not_covered",
+        llm_calls=actual["llm_calls"] - (1 if rw.get("triggered") else 0),
+    )
+    return off
 
 
 def run_once(settings: Settings, cases: list[dict], llm: LLMClient, throttle_s: float):
@@ -472,6 +498,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--ranks", action="store_true", help="expected-section rank in the pool")
     ap.add_argument("--retrieval", choices=["vector", "hybrid"], help="override RETRIEVAL_MODE")
     ap.add_argument("--rerank", choices=["off", "on"], help="override RERANK (D60)")
+    ap.add_argument("--rewrite", choices=["off", "on"], help="override REWRITE_ON_MISS (D61)")
     ap.add_argument(
         "--cases", type=Path, action="append", help="case file (repeatable; default cases.jsonl)"
     )
@@ -488,6 +515,8 @@ def main(argv: list[str] | None = None) -> int:
         settings = settings.model_copy(update={"retrieval_mode": args.retrieval})
     if args.rerank:
         settings = settings.model_copy(update={"rerank": args.rerank})
+    if args.rewrite:
+        settings = settings.model_copy(update={"rewrite_on_miss": args.rewrite})
     cases = load_cases(*(args.cases or []))
 
     if args.ranks:
@@ -541,6 +570,7 @@ def main(argv: list[str] | None = None) -> int:
         "model": settings.groq_model if provider == "groq" else "extractive-fake",
         "retrieval_mode": settings.retrieval_mode,
         "rerank": settings.rerank,
+        "rewrite_on_miss": settings.rewrite_on_miss,
         "tau": settings.retrieval_min_score,
         "top_k": settings.retrieval_top_k,
         "pool": settings.retrieval_pool,
@@ -566,6 +596,21 @@ def main(argv: list[str] | None = None) -> int:
                 + "\n"
             )
     report_path.write_text(json.dumps(report, indent=2, ensure_ascii=False))
+    if settings.rewrite_on_miss == "on":  # D61: paired "off" from the same run (round 1 only)
+        off_results = []
+        for case, actual, _score, extra in results:
+            off = round1_view(actual)
+            off_results.append((case, off, score_case(case, off), extra))
+        off_res_path = results_path.with_name(results_path.stem + "_paired_off.jsonl")
+        with off_res_path.open("w") as f:
+            for case, actual, score, extra in off_results:
+                row = to_row(case, actual, score, extra, provider, model)
+                f.write(json.dumps(row, ensure_ascii=False) + "\n")
+        off_report = build_report(off_results, {**run_info, "paired": "round 1 only (off)"})
+        report_path.with_name(report_path.stem + "_paired_off.json").write_text(
+            json.dumps(off_report, indent=2, ensure_ascii=False)
+        )
+        print(f"  paired off: {off_report['summary']['passed']}/{off_report['summary']['total']}")
 
     m, sm = report["metrics"], report["summary"]
     banner(
