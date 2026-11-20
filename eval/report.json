@@ -3,18 +3,21 @@
     "provider": "groq",
     "model": "qwen/qwen3.8-27b",
     "retrieval_mode": "vector",
+    "rerank": "off",
+    "rewrite_on_miss": "on",
     "tau": 0.38,
     "top_k": 3,
     "pool": 8,
     "cases": 35,
-    "commit": "700a9f2",
-    "timestamp": "2026-11-20T13:13:12+00:00",
-    "repeats": 1
+    "commit": "e037c07",
+    "timestamp": "2026-11-20T19:01:37+00:00",
+    "repeats": 1,
+    "note": "35-case rows of the single D61 Groq run (eval/results_rewrite_holdout.jsonl), copied unchanged"
   },
   "summary": {
     "total": 35,
-    "passed": 32,
-    "pass_rate": 0.914
+    "passed": 33,
+    "pass_rate": 0.943
   },
   "by_category": {
     "asymmetric-silence": {
@@ -47,7 +50,7 @@
     },
     "paraphrase": {
       "total": 3,
-      "pass": 2
+      "pass": 3
     },
     "policy-says-no": {
       "total": 2,
@@ -66,31 +69,31 @@
     "retrieval_hit_at_3": 0.893,
     "citation_accuracy": 1.0,
     "key_fact_accuracy": 1.0,
-    "not_covered_precision": 0.7,
+    "not_covered_precision": 0.778,
     "not_covered_recall": 1.0,
     "not_covered_by_gate": {
-      "llm_not_covered": 6,
+      "rewrite_not_covered": 4,
+      "rewrite_failed": 1,
       "tau": 4
     },
-    "gate_as_expected": 0.833,
+    "gate_as_expected": 0.5,
     "false_refusals": [
       "kes-noshow-fine",
-      "nim-weekend-typo",
       "saf-cutoff"
     ],
     "leaks": 0,
     "injection_passed": "4/4",
     "try_again": 0,
-    "connection_retries": 1,
+    "connection_retries": 0,
     "max_llm_calls": 2,
-    "total_llm_calls": 32,
+    "total_llm_calls": 37,
     "max_citations": 2,
     "latency_ms": {
       "note": "in-process (retrieval + LLM), excludes HTTP; see scripts/bench.py for API",
-      "llm_cases_p50": 469,
-      "llm_cases_p95": 722,
-      "all_cases_p95": 722,
-      "max": 745
+      "llm_cases_p50": 509,
+      "llm_cases_p95": 747,
+      "all_cases_p95": 747,
+      "max": 828
     }
   },
   "failures": {
@@ -101,10 +104,6 @@
     "saf-cutoff": [
       "status not_covered != expected answered",
       "missing one of ['2 hours', 'two hours']"
-    ],
-    "nim-weekend-typo": [
-      "status not_covered != expected answered",
-      "missing one of ['manager']"
     ]
   }
 }
