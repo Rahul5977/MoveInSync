@@ -1,0 +1,974 @@
+{
+  "chosen_tau": 0.38,
+  "rule": "highest tau with zero false refusals of answerable cases",
+  "caveat": "tuned on the same set it is scored on (no held-out set)",
+  "best_scores": {
+    "saf-holiday-silent": 0.2827262878417969,
+    "kes-wifi": 0.3186572790145874,
+    "nim-pets": 0.32842767238616943,
+    "saf-children": 0.37224262952804565,
+    "nim-weekend-typo": 0.38894927501678467,
+    "kes-guest-silent": 0.4002770781517029,
+    "saf-noshow-not-wait": 0.4080960750579834,
+    "nim-holiday-silent": 0.4271906018257141,
+    "kes-noshow-fine": 0.42792898416519165,
+    "nim-nightdrop-not-escort": 0.4398735761642456,
+    "saf-cutoff": 0.4452468156814575,
+    "kes-asks-nimbus-escort": 0.45766758918762207,
+    "nim-saffron-cap-trap": 0.45932769775390625,
+    "saf-external-guest-no": 0.45983850955963135,
+    "kes-injection-question": 0.46364516019821167,
+    "nim-noshow-twice": 0.4690648317337036,
+    "kes-airport-vehicle-not-approval": 0.48005127906799316,
+    "kes-saturday-no": 0.5161224007606506,
+    "kes-cancel-paraphrase": 0.5172203779220581,
+    "saf-injection-doc": 0.5198006629943848,
+    "kes-holiday-answered": 0.5285983681678772,
+    "kes-wait-informal": 0.5384982824325562,
+    "saf-adhoc-approval-and-cap": 0.5481428503990173,
+    "nim-eligibility-distance": 0.5490468144416809,
+    "nim-escort-10pm-trap": 0.5564007759094238,
+    "nim-escort-745-v1": 0.5626025795936584,
+    "nim-escort-745-v2": 0.5660624504089355,
+    "nim-guest-answered": 0.5671926140785217,
+    "saf-escort": 0.6031925082206726,
+    "nim-adhoc-cap-not-approval": 0.6035698652267456,
+    "nim-cutoff-v2": 0.6192609071731567,
+    "nim-cutoff-v1": 0.6212109923362732,
+    "kes-airport-approval": 0.6403289437294006
+  },
+  "lowest_answerable": {
+    "id": "nim-weekend-typo",
+    "score": 0.38894927501678467
+  },
+  "sweep": [
+    {
+      "tau": 0.0,
+      "false_refusals": [],
+      "not_covered_caught": [],
+      "universal_caught": []
+    },
+    {
+      "tau": 0.01,
+      "false_refusals": [],
+      "not_covered_caught": [],
+      "universal_caught": []
+    },
+    {
+      "tau": 0.02,
+      "false_refusals": [],
+      "not_covered_caught": [],
+      "universal_caught": []
+    },
+    {
+      "tau": 0.03,
+      "false_refusals": [],
+      "not_covered_caught": [],
+      "universal_caught": []
+    },
+    {
+      "tau": 0.04,
+      "false_refusals": [],
+      "not_covered_caught": [],
+      "universal_caught": []
+    },
+    {
+      "tau": 0.05,
+      "false_refusals": [],
+      "not_covered_caught": [],
+      "universal_caught": []
+    },
+    {
+      "tau": 0.06,
+      "false_refusals": [],
+      "not_covered_caught": [],
+      "universal_caught": []
+    },
+    {
+      "tau": 0.07,
+      "false_refusals": [],
+      "not_covered_caught": [],
+      "universal_caught": []
+    },
+    {
+      "tau": 0.08,
+      "false_refusals": [],
+      "not_covered_caught": [],
+      "universal_caught": []
+    },
+    {
+      "tau": 0.09,
+      "false_refusals": [],
+      "not_covered_caught": [],
+      "universal_caught": []
+    },
+    {
+      "tau": 0.1,
+      "false_refusals": [],
+      "not_covered_caught": [],
+      "universal_caught": []
+    },
+    {
+      "tau": 0.11,
+      "false_refusals": [],
+      "not_covered_caught": [],
+      "universal_caught": []
+    },
+    {
+      "tau": 0.12,
+      "false_refusals": [],
+      "not_covered_caught": [],
+      "universal_caught": []
+    },
+    {
+      "tau": 0.13,
+      "false_refusals": [],
+      "not_covered_caught": [],
+      "universal_caught": []
+    },
+    {
+      "tau": 0.14,
+      "false_refusals": [],
+      "not_covered_caught": [],
+      "universal_caught": []
+    },
+    {
+      "tau": 0.15,
+      "false_refusals": [],
+      "not_covered_caught": [],
+      "universal_caught": []
+    },
+    {
+      "tau": 0.16,
+      "false_refusals": [],
+      "not_covered_caught": [],
+      "universal_caught": []
+    },
+    {
+      "tau": 0.17,
+      "false_refusals": [],
+      "not_covered_caught": [],
+      "universal_caught": []
+    },
+    {
+      "tau": 0.18,
+      "false_refusals": [],
+      "not_covered_caught": [],
+      "universal_caught": []
+    },
+    {
+      "tau": 0.19,
+      "false_refusals": [],
+      "not_covered_caught": [],
+      "universal_caught": []
+    },
+    {
+      "tau": 0.2,
+      "false_refusals": [],
+      "not_covered_caught": [],
+      "universal_caught": []
+    },
+    {
+      "tau": 0.21,
+      "false_refusals": [],
+      "not_covered_caught": [],
+      "universal_caught": []
+    },
+    {
+      "tau": 0.22,
+      "false_refusals": [],
+      "not_covered_caught": [],
+      "universal_caught": []
+    },
+    {
+      "tau": 0.23,
+      "false_refusals": [],
+      "not_covered_caught": [],
+      "universal_caught": []
+    },
+    {
+      "tau": 0.24,
+      "false_refusals": [],
+      "not_covered_caught": [],
+      "universal_caught": []
+    },
+    {
+      "tau": 0.25,
+      "false_refusals": [],
+      "not_covered_caught": [],
+      "universal_caught": []
+    },
+    {
+      "tau": 0.26,
+      "false_refusals": [],
+      "not_covered_caught": [],
+      "universal_caught": []
+    },
+    {
+      "tau": 0.27,
+      "false_refusals": [],
+      "not_covered_caught": [],
+      "universal_caught": []
+    },
+    {
+      "tau": 0.28,
+      "false_refusals": [],
+      "not_covered_caught": [],
+      "universal_caught": []
+    },
+    {
+      "tau": 0.29,
+      "false_refusals": [],
+      "not_covered_caught": [
+        "saf-holiday-silent"
+      ],
+      "universal_caught": []
+    },
+    {
+      "tau": 0.3,
+      "false_refusals": [],
+      "not_covered_caught": [
+        "saf-holiday-silent"
+      ],
+      "universal_caught": []
+    },
+    {
+      "tau": 0.31,
+      "false_refusals": [],
+      "not_covered_caught": [
+        "saf-holiday-silent"
+      ],
+      "universal_caught": []
+    },
+    {
+      "tau": 0.32,
+      "false_refusals": [],
+      "not_covered_caught": [
+        "kes-wifi",
+        "saf-holiday-silent"
+      ],
+      "universal_caught": [
+        "kes-wifi"
+      ]
+    },
+    {
+      "tau": 0.33,
+      "false_refusals": [],
+      "not_covered_caught": [
+        "kes-wifi",
+        "nim-pets",
+        "saf-holiday-silent"
+      ],
+      "universal_caught": [
+        "kes-wifi",
+        "nim-pets"
+      ]
+    },
+    {
+      "tau": 0.34,
+      "false_refusals": [],
+      "not_covered_caught": [
+        "kes-wifi",
+        "nim-pets",
+        "saf-holiday-silent"
+      ],
+      "universal_caught": [
+        "kes-wifi",
+        "nim-pets"
+      ]
+    },
+    {
+      "tau": 0.35,
+      "false_refusals": [],
+      "not_covered_caught": [
+        "kes-wifi",
+        "nim-pets",
+        "saf-holiday-silent"
+      ],
+      "universal_caught": [
+        "kes-wifi",
+        "nim-pets"
+      ]
+    },
+    {
+      "tau": 0.36,
+      "false_refusals": [],
+      "not_covered_caught": [
+        "kes-wifi",
+        "nim-pets",
+        "saf-holiday-silent"
+      ],
+      "universal_caught": [
+        "kes-wifi",
+        "nim-pets"
+      ]
+    },
+    {
+      "tau": 0.37,
+      "false_refusals": [],
+      "not_covered_caught": [
+        "kes-wifi",
+        "nim-pets",
+        "saf-holiday-silent"
+      ],
+      "universal_caught": [
+        "kes-wifi",
+        "nim-pets"
+      ]
+    },
+    {
+      "tau": 0.38,
+      "false_refusals": [],
+      "not_covered_caught": [
+        "kes-wifi",
+        "nim-pets",
+        "saf-children",
+        "saf-holiday-silent"
+      ],
+      "universal_caught": [
+        "kes-wifi",
+        "nim-pets",
+        "saf-children"
+      ]
+    },
+    {
+      "tau": 0.39,
+      "false_refusals": [
+        "nim-weekend-typo"
+      ],
+      "not_covered_caught": [
+        "kes-wifi",
+        "nim-pets",
+        "saf-children",
+        "saf-holiday-silent"
+      ],
+      "universal_caught": [
+        "kes-wifi",
+        "nim-pets",
+        "saf-children"
+      ]
+    },
+    {
+      "tau": 0.4,
+      "false_refusals": [
+        "nim-weekend-typo"
+      ],
+      "not_covered_caught": [
+        "kes-wifi",
+        "nim-pets",
+        "saf-children",
+        "saf-holiday-silent"
+      ],
+      "universal_caught": [
+        "kes-wifi",
+        "nim-pets",
+        "saf-children"
+      ]
+    },
+    {
+      "tau": 0.41,
+      "false_refusals": [
+        "nim-weekend-typo",
+        "saf-noshow-not-wait"
+      ],
+      "not_covered_caught": [
+        "kes-guest-silent",
+        "kes-wifi",
+        "nim-pets",
+        "saf-children",
+        "saf-holiday-silent"
+      ],
+      "universal_caught": [
+        "kes-wifi",
+        "nim-pets",
+        "saf-children"
+      ]
+    },
+    {
+      "tau": 0.42,
+      "false_refusals": [
+        "nim-weekend-typo",
+        "saf-noshow-not-wait"
+      ],
+      "not_covered_caught": [
+        "kes-guest-silent",
+        "kes-wifi",
+        "nim-pets",
+        "saf-children",
+        "saf-holiday-silent"
+      ],
+      "universal_caught": [
+        "kes-wifi",
+        "nim-pets",
+        "saf-children"
+      ]
+    },
+    {
+      "tau": 0.43,
+      "false_refusals": [
+        "kes-noshow-fine",
+        "nim-weekend-typo",
+        "saf-noshow-not-wait"
+      ],
+      "not_covered_caught": [
+        "kes-guest-silent",
+        "kes-wifi",
+        "nim-holiday-silent",
+        "nim-pets",
+        "saf-children",
+        "saf-holiday-silent"
+      ],
+      "universal_caught": [
+        "kes-wifi",
+        "nim-pets",
+        "saf-children"
+      ]
+    },
+    {
+      "tau": 0.44,
+      "false_refusals": [
+        "kes-noshow-fine",
+        "nim-nightdrop-not-escort",
+        "nim-weekend-typo",
+        "saf-noshow-not-wait"
+      ],
+      "not_covered_caught": [
+        "kes-guest-silent",
+        "kes-wifi",
+        "nim-holiday-silent",
+        "nim-pets",
+        "saf-children",
+        "saf-holiday-silent"
+      ],
+      "universal_caught": [
+        "kes-wifi",
+        "nim-pets",
+        "saf-children"
+      ]
+    },
+    {
+      "tau": 0.45,
+      "false_refusals": [
+        "kes-noshow-fine",
+        "nim-nightdrop-not-escort",
+        "nim-weekend-typo",
+        "saf-cutoff",
+        "saf-noshow-not-wait"
+      ],
+      "not_covered_caught": [
+        "kes-guest-silent",
+        "kes-wifi",
+        "nim-holiday-silent",
+        "nim-pets",
+        "saf-children",
+        "saf-holiday-silent"
+      ],
+      "universal_caught": [
+        "kes-wifi",
+        "nim-pets",
+        "saf-children"
+      ]
+    },
+    {
+      "tau": 0.46,
+      "false_refusals": [
+        "kes-noshow-fine",
+        "nim-nightdrop-not-escort",
+        "nim-saffron-cap-trap",
+        "nim-weekend-typo",
+        "saf-cutoff",
+        "saf-external-guest-no",
+        "saf-noshow-not-wait"
+      ],
+      "not_covered_caught": [
+        "kes-asks-nimbus-escort",
+        "kes-guest-silent",
+        "kes-wifi",
+        "nim-holiday-silent",
+        "nim-pets",
+        "saf-children",
+        "saf-holiday-silent"
+      ],
+      "universal_caught": [
+        "kes-wifi",
+        "nim-pets",
+        "saf-children"
+      ]
+    },
+    {
+      "tau": 0.47,
+      "false_refusals": [
+        "kes-injection-question",
+        "kes-noshow-fine",
+        "nim-nightdrop-not-escort",
+        "nim-noshow-twice",
+        "nim-saffron-cap-trap",
+        "nim-weekend-typo",
+        "saf-cutoff",
+        "saf-external-guest-no",
+        "saf-noshow-not-wait"
+      ],
+      "not_covered_caught": [
+        "kes-asks-nimbus-escort",
+        "kes-guest-silent",
+        "kes-wifi",
+        "nim-holiday-silent",
+        "nim-pets",
+        "saf-children",
+        "saf-holiday-silent"
+      ],
+      "universal_caught": [
+        "kes-wifi",
+        "nim-pets",
+        "saf-children"
+      ]
+    },
+    {
+      "tau": 0.48,
+      "false_refusals": [
+        "kes-injection-question",
+        "kes-noshow-fine",
+        "nim-nightdrop-not-escort",
+        "nim-noshow-twice",
+        "nim-saffron-cap-trap",
+        "nim-weekend-typo",
+        "saf-cutoff",
+        "saf-external-guest-no",
+        "saf-noshow-not-wait"
+      ],
+      "not_covered_caught": [
+        "kes-asks-nimbus-escort",
+        "kes-guest-silent",
+        "kes-wifi",
+        "nim-holiday-silent",
+        "nim-pets",
+        "saf-children",
+        "saf-holiday-silent"
+      ],
+      "universal_caught": [
+        "kes-wifi",
+        "nim-pets",
+        "saf-children"
+      ]
+    },
+    {
+      "tau": 0.49,
+      "false_refusals": [
+        "kes-airport-vehicle-not-approval",
+        "kes-injection-question",
+        "kes-noshow-fine",
+        "nim-nightdrop-not-escort",
+        "nim-noshow-twice",
+        "nim-saffron-cap-trap",
+        "nim-weekend-typo",
+        "saf-cutoff",
+        "saf-external-guest-no",
+        "saf-noshow-not-wait"
+      ],
+      "not_covered_caught": [
+        "kes-asks-nimbus-escort",
+        "kes-guest-silent",
+        "kes-wifi",
+        "nim-holiday-silent",
+        "nim-pets",
+        "saf-children",
+        "saf-holiday-silent"
+      ],
+      "universal_caught": [
+        "kes-wifi",
+        "nim-pets",
+        "saf-children"
+      ]
+    },
+    {
+      "tau": 0.5,
+      "false_refusals": [
+        "kes-airport-vehicle-not-approval",
+        "kes-injection-question",
+        "kes-noshow-fine",
+        "nim-nightdrop-not-escort",
+        "nim-noshow-twice",
+        "nim-saffron-cap-trap",
+        "nim-weekend-typo",
+        "saf-cutoff",
+        "saf-external-guest-no",
+        "saf-noshow-not-wait"
+      ],
+      "not_covered_caught": [
+        "kes-asks-nimbus-escort",
+        "kes-guest-silent",
+        "kes-wifi",
+        "nim-holiday-silent",
+        "nim-pets",
+        "saf-children",
+        "saf-holiday-silent"
+      ],
+      "universal_caught": [
+        "kes-wifi",
+        "nim-pets",
+        "saf-children"
+      ]
+    },
+    {
+      "tau": 0.51,
+      "false_refusals": [
+        "kes-airport-vehicle-not-approval",
+        "kes-injection-question",
+        "kes-noshow-fine",
+        "nim-nightdrop-not-escort",
+        "nim-noshow-twice",
+        "nim-saffron-cap-trap",
+        "nim-weekend-typo",
+        "saf-cutoff",
+        "saf-external-guest-no",
+        "saf-noshow-not-wait"
+      ],
+      "not_covered_caught": [
+        "kes-asks-nimbus-escort",
+        "kes-guest-silent",
+        "kes-wifi",
+        "nim-holiday-silent",
+        "nim-pets",
+        "saf-children",
+        "saf-holiday-silent"
+      ],
+      "universal_caught": [
+        "kes-wifi",
+        "nim-pets",
+        "saf-children"
+      ]
+    },
+    {
+      "tau": 0.52,
+      "false_refusals": [
+        "kes-airport-vehicle-not-approval",
+        "kes-cancel-paraphrase",
+        "kes-injection-question",
+        "kes-noshow-fine",
+        "kes-saturday-no",
+        "nim-nightdrop-not-escort",
+        "nim-noshow-twice",
+        "nim-saffron-cap-trap",
+        "nim-weekend-typo",
+        "saf-cutoff",
+        "saf-external-guest-no",
+        "saf-injection-doc",
+        "saf-noshow-not-wait"
+      ],
+      "not_covered_caught": [
+        "kes-asks-nimbus-escort",
+        "kes-guest-silent",
+        "kes-wifi",
+        "nim-holiday-silent",
+        "nim-pets",
+        "saf-children",
+        "saf-holiday-silent"
+      ],
+      "universal_caught": [
+        "kes-wifi",
+        "nim-pets",
+        "saf-children"
+      ]
+    },
+    {
+      "tau": 0.53,
+      "false_refusals": [
+        "kes-airport-vehicle-not-approval",
+        "kes-cancel-paraphrase",
+        "kes-holiday-answered",
+        "kes-injection-question",
+        "kes-noshow-fine",
+        "kes-saturday-no",
+        "nim-nightdrop-not-escort",
+        "nim-noshow-twice",
+        "nim-saffron-cap-trap",
+        "nim-weekend-typo",
+        "saf-cutoff",
+        "saf-external-guest-no",
+        "saf-injection-doc",
+        "saf-noshow-not-wait"
+      ],
+      "not_covered_caught": [
+        "kes-asks-nimbus-escort",
+        "kes-guest-silent",
+        "kes-wifi",
+        "nim-holiday-silent",
+        "nim-pets",
+        "saf-children",
+        "saf-holiday-silent"
+      ],
+      "universal_caught": [
+        "kes-wifi",
+        "nim-pets",
+        "saf-children"
+      ]
+    },
+    {
+      "tau": 0.54,
+      "false_refusals": [
+        "kes-airport-vehicle-not-approval",
+        "kes-cancel-paraphrase",
+        "kes-holiday-answered",
+        "kes-injection-question",
+        "kes-noshow-fine",
+        "kes-saturday-no",
+        "kes-wait-informal",
+        "nim-nightdrop-not-escort",
+        "nim-noshow-twice",
+        "nim-saffron-cap-trap",
+        "nim-weekend-typo",
+        "saf-cutoff",
+        "saf-external-guest-no",
+        "saf-injection-doc",
+        "saf-noshow-not-wait"
+      ],
+      "not_covered_caught": [
+        "kes-asks-nimbus-escort",
+        "kes-guest-silent",
+        "kes-wifi",
+        "nim-holiday-silent",
+        "nim-pets",
+        "saf-children",
+        "saf-holiday-silent"
+      ],
+      "universal_caught": [
+        "kes-wifi",
+        "nim-pets",
+        "saf-children"
+      ]
+    },
+    {
+      "tau": 0.55,
+      "false_refusals": [
+        "kes-airport-vehicle-not-approval",
+        "kes-cancel-paraphrase",
+        "kes-holiday-answered",
+        "kes-injection-question",
+        "kes-noshow-fine",
+        "kes-saturday-no",
+        "kes-wait-informal",
+        "nim-eligibility-distance",
+        "nim-nightdrop-not-escort",
+        "nim-noshow-twice",
+        "nim-saffron-cap-trap",
+        "nim-weekend-typo",
+        "saf-adhoc-approval-and-cap",
+        "saf-cutoff",
+        "saf-external-guest-no",
+        "saf-injection-doc",
+        "saf-noshow-not-wait"
+      ],
+      "not_covered_caught": [
+        "kes-asks-nimbus-escort",
+        "kes-guest-silent",
+        "kes-wifi",
+        "nim-holiday-silent",
+        "nim-pets",
+        "saf-children",
+        "saf-holiday-silent"
+      ],
+      "universal_caught": [
+        "kes-wifi",
+        "nim-pets",
+        "saf-children"
+      ]
+    },
+    {
+      "tau": 0.56,
+      "false_refusals": [
+        "kes-airport-vehicle-not-approval",
+        "kes-cancel-paraphrase",
+        "kes-holiday-answered",
+        "kes-injection-question",
+        "kes-noshow-fine",
+        "kes-saturday-no",
+        "kes-wait-informal",
+        "nim-eligibility-distance",
+        "nim-escort-10pm-trap",
+        "nim-nightdrop-not-escort",
+        "nim-noshow-twice",
+        "nim-saffron-cap-trap",
+        "nim-weekend-typo",
+        "saf-adhoc-approval-and-cap",
+        "saf-cutoff",
+        "saf-external-guest-no",
+        "saf-injection-doc",
+        "saf-noshow-not-wait"
+      ],
+      "not_covered_caught": [
+        "kes-asks-nimbus-escort",
+        "kes-guest-silent",
+        "kes-wifi",
+        "nim-holiday-silent",
+        "nim-pets",
+        "saf-children",
+        "saf-holiday-silent"
+      ],
+      "universal_caught": [
+        "kes-wifi",
+        "nim-pets",
+        "saf-children"
+      ]
+    },
+    {
+      "tau": 0.57,
+      "false_refusals": [
+        "kes-airport-vehicle-not-approval",
+        "kes-cancel-paraphrase",
+        "kes-holiday-answered",
+        "kes-injection-question",
+        "kes-noshow-fine",
+        "kes-saturday-no",
+        "kes-wait-informal",
+        "nim-eligibility-distance",
+        "nim-escort-10pm-trap",
+        "nim-escort-745-v1",
+        "nim-escort-745-v2",
+        "nim-guest-answered",
+        "nim-nightdrop-not-escort",
+        "nim-noshow-twice",
+        "nim-saffron-cap-trap",
+        "nim-weekend-typo",
+        "saf-adhoc-approval-and-cap",
+        "saf-cutoff",
+        "saf-external-guest-no",
+        "saf-injection-doc",
+        "saf-noshow-not-wait"
+      ],
+      "not_covered_caught": [
+        "kes-asks-nimbus-escort",
+        "kes-guest-silent",
+        "kes-wifi",
+        "nim-holiday-silent",
+        "nim-pets",
+        "saf-children",
+        "saf-holiday-silent"
+      ],
+      "universal_caught": [
+        "kes-wifi",
+        "nim-pets",
+        "saf-children"
+      ]
+    },
+    {
+      "tau": 0.58,
+      "false_refusals": [
+        "kes-airport-vehicle-not-approval",
+        "kes-cancel-paraphrase",
+        "kes-holiday-answered",
+        "kes-injection-question",
+        "kes-noshow-fine",
+        "kes-saturday-no",
+        "kes-wait-informal",
+        "nim-eligibility-distance",
+        "nim-escort-10pm-trap",
+        "nim-escort-745-v1",
+        "nim-escort-745-v2",
+        "nim-guest-answered",
+        "nim-nightdrop-not-escort",
+        "nim-noshow-twice",
+        "nim-saffron-cap-trap",
+        "nim-weekend-typo",
+        "saf-adhoc-approval-and-cap",
+        "saf-cutoff",
+        "saf-external-guest-no",
+        "saf-injection-doc",
+        "saf-noshow-not-wait"
+      ],
+      "not_covered_caught": [
+        "kes-asks-nimbus-escort",
+        "kes-guest-silent",
+        "kes-wifi",
+        "nim-holiday-silent",
+        "nim-pets",
+        "saf-children",
+        "saf-holiday-silent"
+      ],
+      "universal_caught": [
+        "kes-wifi",
+        "nim-pets",
+        "saf-children"
+      ]
+    },
+    {
+      "tau": 0.59,
+      "false_refusals": [
+        "kes-airport-vehicle-not-approval",
+        "kes-cancel-paraphrase",
+        "kes-holiday-answered",
+        "kes-injection-question",
+        "kes-noshow-fine",
+        "kes-saturday-no",
+        "kes-wait-informal",
+        "nim-eligibility-distance",
+        "nim-escort-10pm-trap",
+        "nim-escort-745-v1",
+        "nim-escort-745-v2",
+        "nim-guest-answered",
+        "nim-nightdrop-not-escort",
+        "nim-noshow-twice",
+        "nim-saffron-cap-trap",
+        "nim-weekend-typo",
+        "saf-adhoc-approval-and-cap",
+        "saf-cutoff",
+        "saf-external-guest-no",
+        "saf-injection-doc",
+        "saf-noshow-not-wait"
+      ],
+      "not_covered_caught": [
+        "kes-asks-nimbus-escort",
+        "kes-guest-silent",
+        "kes-wifi",
+        "nim-holiday-silent",
+        "nim-pets",
+        "saf-children",
+        "saf-holiday-silent"
+      ],
+      "universal_caught": [
+        "kes-wifi",
+        "nim-pets",
+        "saf-children"
+      ]
+    },
+    {
+      "tau": 0.6,
+      "false_refusals": [
+        "kes-airport-vehicle-not-approval",
+        "kes-cancel-paraphrase",
+        "kes-holiday-answered",
+        "kes-injection-question",
+        "kes-noshow-fine",
+        "kes-saturday-no",
+        "kes-wait-informal",
+        "nim-eligibility-distance",
+        "nim-escort-10pm-trap",
+        "nim-escort-745-v1",
+        "nim-escort-745-v2",
+        "nim-guest-answered",
+        "nim-nightdrop-not-escort",
+        "nim-noshow-twice",
+        "nim-saffron-cap-trap",
+        "nim-weekend-typo",
+        "saf-adhoc-approval-and-cap",
+        "saf-cutoff",
+        "saf-external-guest-no",
+        "saf-injection-doc",
+        "saf-noshow-not-wait"
+      ],
+      "not_covered_caught": [
+        "kes-asks-nimbus-escort",
+        "kes-guest-silent",
+        "kes-wifi",
+        "nim-holiday-silent",
+        "nim-pets",
+        "saf-children",
+        "saf-holiday-silent"
+      ],
+      "universal_caught": [
+        "kes-wifi",
+        "nim-pets",
+        "saf-children"
+      ]
+    }
+  ]
+}

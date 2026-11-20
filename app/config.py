@@ -28,8 +28,9 @@ class Settings(BaseSettings):
     # D22: candidate pool from the vector store, top-k of it sent to the LLM (= max citations).
     retrieval_pool: int = 8
     retrieval_top_k: int = 3
-    # D5: tau, the off-topic gate on best cosine similarity. Placeholder until the Phase 4 sweep.
-    retrieval_min_score: float = 0.35
+    # D5/D52: tau, the off-topic gate on best cosine similarity. From the eval sweep (D50):
+    # highest tau with zero false refusals. Margin is thin (0.017); see EVAL_REPORT §4.
+    retrieval_min_score: float = 0.38
 
     data_dir: Path = Path("var")
     policies_dir: Path = Path("data/policies")
