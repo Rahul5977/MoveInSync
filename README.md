@@ -152,7 +152,7 @@ The author reviews every answer by hand (§10); auto-scores are never changed af
 
 ## 6. Design decisions (summary)
 
-Full log with 59 decisions and their reasons: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+Full log with 62 decisions and their reasons: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 - **Company from the JWT only.** No request field can name a company, collection or version;
   extra fields are rejected (422). Unknown company/role → 403.
