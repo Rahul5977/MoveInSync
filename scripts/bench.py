@@ -32,6 +32,12 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--base", default="http://localhost:8000")
     ap.add_argument("--n", type=int, default=30)
     ap.add_argument("--throttle", type=float, default=2.5, help="seconds between requests")
+    ap.add_argument(
+        "--warmup",
+        type=int,
+        default=3,
+        help="untimed off-topic requests first (refused by tau: 0 LLM calls, 0 tokens)",
+    )
     args = ap.parse_args(argv)
 
     settings = get_settings()
@@ -49,6 +55,15 @@ def main(argv: list[str] | None = None) -> int:
         print("WARNING: server LLM not ready; latencies will reflect try_again responses")
 
     tokens = {}
+    with httpx.Client(timeout=10) as client:  # warm the embedding model / BM25, not counted
+        for i in range(args.warmup):
+            co = pool[i % len(pool)]["company"]
+            tokens.setdefault(co, issue_token("bench", co, "employee", settings))
+            client.post(
+                f"{args.base}/ask",
+                json={"question": "Can I bring my pet dog in the cab?"},
+                headers={"Authorization": f"Bearer {tokens[co]}"},
+            )
     wall, server, statuses, calls = [], [], Counter(), Counter()
     by_status: dict[str, list[float]] = {}
     with httpx.Client(timeout=10) as client:
@@ -80,6 +95,8 @@ def main(argv: list[str] | None = None) -> int:
         "health": health,
         "n": args.n,
         "throttle_s": args.throttle,
+        "warmup_requests": args.warmup,
+        "retrieval_mode": health.get("retrieval_mode"),
         "client_ms": {
             "p50": round(percentile(wall, 50)),
             "p95": round(percentile(wall, 95)),
