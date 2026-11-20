@@ -27,6 +27,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from app.config import Settings, get_settings
+from app.embeddings import make_embedder
 from app.ingest.service import ingest_policy, seed_policies
 from app.llm.base import LLMClient
 from app.llm.factory import make_llm
@@ -78,9 +79,17 @@ def choose_provider(requested: str, settings: Settings) -> str:
     return "groq" if settings.groq_api_key else "fake"
 
 
-def output_paths(provider: str, mode: str = "vector") -> tuple[Path, Path]:
-    """Only groq + vector writes the submission file; other modes get a suffix, never overwrite."""
-    suffix = "" if mode == "vector" else f"_{mode}"
+def variant_suffix(mode: str = "vector", embedding: str = "minilm") -> str:
+    """'' for the submission setup (vector + minilm); e.g. '_hybrid', '_bge', '_hybrid_bge'."""
+    parts = ([mode] if mode != "vector" else []) + (["bge"] if embedding == "bge-small" else [])
+    return "".join(f"_{p}" for p in parts)
+
+
+def output_paths(
+    provider: str, mode: str = "vector", embedding: str = "minilm"
+) -> tuple[Path, Path]:
+    """Only groq + vector + minilm writes the submission file; other setups get a suffix."""
+    suffix = variant_suffix(mode, embedding)
     if provider == "groq":
         return EVAL_DIR / f"results{suffix}.jsonl", EVAL_DIR / f"report{suffix}.json"
     return EVAL_DIR / f"results_fake{suffix}.jsonl", EVAL_DIR / f"report_fake{suffix}.json"
@@ -103,7 +112,10 @@ class Env:
         self.settings = settings.model_copy(update={"data_dir": Path(self._tmp.name)})
         self.registry = Registry(self.settings.registry_path)
         self.registry.init_schema()
-        self.store = VectorStore(self.settings.chroma_dir)
+        self.store = VectorStore(
+            self.settings.chroma_dir,
+            make_embedder(self.settings.embedding_model, self.settings.bge_model_dir),
+        )
         self.bm25 = Bm25Cache()  # used only in hybrid mode; builds per collection on first use
         outcomes = seed_policies(self.registry, self.store, self.settings)
         if not all(o.startswith("ingested") for o in outcomes.values()):
@@ -195,8 +207,9 @@ def run_sweep(settings: Settings, cases: list[dict]) -> dict:
         "lowest_answerable": {"id": lowest_answerable[1], "score": lowest_answerable[0]},
         "sweep": rows,
     }
-    (EVAL_DIR / "tau_sweep.json").write_text(json.dumps(result, indent=2, ensure_ascii=False))
-    print(f"Wrote {EVAL_DIR / 'tau_sweep.json'}")
+    out = EVAL_DIR / f"tau_sweep{variant_suffix(embedding=settings.embedding_model)}.json"
+    out.write_text(json.dumps(result, indent=2, ensure_ascii=False))
+    print(f"Wrote {out}")
     return result
 
 
@@ -220,9 +233,8 @@ def run_ranks(settings: Settings, cases: list[dict], out_name: str | None = None
     """Where does the expected section land in the retrieval pool? hit@3 (sent), @5, @8 (pool).
     Also flags answerable cases whose section is in the top 3 but tau (vector score) refuses."""
     mode = settings.retrieval_mode
-    out_name = out_name or (
-        "retrieval_ranks.json" if mode == "vector" else f"retrieval_ranks_{mode}.json"
-    )
+    suffix = variant_suffix(mode, settings.embedding_model)
+    out_name = out_name or f"retrieval_ranks{suffix}.json"
     env = Env(settings)
     ranks: dict[str, int | None] = {}
     best_vector: dict[str, float | None] = {}
@@ -260,6 +272,7 @@ def run_ranks(settings: Settings, cases: list[dict], out_name: str | None = None
     )
     out = {
         "mode": mode,
+        "embedding_model": settings.embedding_model,
         "pool": settings.retrieval_pool,
         "answerable": n,
         **hits,
@@ -424,6 +437,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--sweep", action="store_true", help="tau sweep, retrieval only (no LLM)")
     ap.add_argument("--ranks", action="store_true", help="expected-section rank in the pool")
     ap.add_argument("--retrieval", choices=["vector", "hybrid"], help="override RETRIEVAL_MODE")
+    ap.add_argument("--embedding", choices=["minilm", "bge-small"], help="override EMBEDDING_MODEL")
     ap.add_argument("--tau", type=float, help="override RETRIEVAL_MIN_SCORE for this run")
     ap.add_argument("--repeat", type=int, default=1, help="run N times and report flips")
     ap.add_argument("--throttle", type=float, help="seconds between LLM cases (groq default 2.5)")
@@ -434,12 +448,15 @@ def main(argv: list[str] | None = None) -> int:
         settings = settings.model_copy(update={"retrieval_min_score": args.tau})
     if args.retrieval:
         settings = settings.model_copy(update={"retrieval_mode": args.retrieval})
+    if args.embedding:
+        settings = settings.model_copy(update={"embedding_model": args.embedding})
     cases = load_cases()
 
     if args.ranks:
         banner(
             [
                 f"RETRIEVAL RANKS - no LLM | {settings.retrieval_mode}"
+                f" | {settings.embedding_model}"
                 f" | pool {settings.retrieval_pool}"
             ]
         )
@@ -456,7 +473,9 @@ def main(argv: list[str] | None = None) -> int:
     settings = settings.model_copy(update={"llm_provider": provider})
     llm = make_llm(settings)
     throttle = args.throttle if args.throttle is not None else (2.5 if provider == "groq" else 0.0)
-    results_path, report_path = output_paths(provider, settings.retrieval_mode)
+    results_path, report_path = output_paths(
+        provider, settings.retrieval_mode, settings.embedding_model
+    )
 
     banner(
         [

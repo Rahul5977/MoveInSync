@@ -25,6 +25,7 @@ CREATE TABLE IF NOT EXISTS policy_versions (
     status          TEXT    NOT NULL CHECK (status IN ('pending','active','retired','failed')),
     chunk_count     INTEGER NOT NULL DEFAULT 0,
     created_at      TEXT    NOT NULL,
+    embedding_model TEXT    NOT NULL DEFAULT 'minilm',
     PRIMARY KEY (company_id, version)
 );
 CREATE TABLE IF NOT EXISTS active_version (
@@ -67,6 +68,13 @@ class Registry:
         self._db_path.parent.mkdir(parents=True, exist_ok=True)
         with self._conn() as c:
             c.executescript(SCHEMA)
+            # D59: registries created before the column existed were all embedded with minilm.
+            cols = [r[1] for r in c.execute("PRAGMA table_info(policy_versions)")]
+            if "embedding_model" not in cols:
+                c.execute(
+                    "ALTER TABLE policy_versions"
+                    " ADD COLUMN embedding_model TEXT NOT NULL DEFAULT 'minilm'"
+                )
 
     def active(self, company_id: str) -> ActivePolicy | None:
         with self._conn() as c:
@@ -78,18 +86,33 @@ class Registry:
         return ActivePolicy(*row) if row else None
 
     def record_pending(
-        self, company_id: str, version: int, collection_name: str, doc_title: str
+        self,
+        company_id: str,
+        version: int,
+        collection_name: str,
+        doc_title: str,
+        embedding_model: str = "minilm",
     ) -> None:
         with self._conn() as c:
             c.execute(
                 "INSERT INTO policy_versions"
-                " (company_id, version, collection_name, doc_title, status, created_at)"
-                " VALUES (?, ?, ?, ?, 'pending', ?)"
+                " (company_id, version, collection_name, doc_title, status, created_at,"
+                "  embedding_model)"
+                " VALUES (?, ?, ?, ?, 'pending', ?, ?)"
                 " ON CONFLICT (company_id, version) DO UPDATE SET"
                 "   status = 'pending', doc_title = excluded.doc_title,"
-                "   created_at = excluded.created_at",
-                (company_id, version, collection_name, doc_title, _now()),
+                "   created_at = excluded.created_at,"
+                "   embedding_model = excluded.embedding_model",
+                (company_id, version, collection_name, doc_title, _now(), embedding_model),
             )
+
+    def embedding_model(self, company_id: str, version: int) -> str | None:
+        with self._conn() as c:
+            row = c.execute(
+                "SELECT embedding_model FROM policy_versions WHERE company_id = ? AND version = ?",
+                (company_id, version),
+            ).fetchone()
+        return row[0] if row else None
 
     def mark_failed(self, company_id: str, version: int) -> None:
         with self._conn() as c:

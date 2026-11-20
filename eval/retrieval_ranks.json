@@ -1,5 +1,6 @@
 {
   "mode": "vector",
+  "embedding_model": "minilm",
   "pool": 8,
   "answerable": 28,
   "hit@3": 0.893,

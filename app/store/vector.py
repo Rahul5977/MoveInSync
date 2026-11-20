@@ -12,6 +12,7 @@ import chromadb
 from chromadb.config import Settings as ChromaSettings
 from chromadb.errors import NotFoundError
 
+from app.embeddings import DEFAULT_MODEL, Embedder, MiniLmEmbedder
 from app.ingest.chunker import Chunk
 from app.schemas import RetrievedChunk
 
@@ -20,6 +21,19 @@ _COMPANY_ID_RE = re.compile(r"^[a-z][a-z0-9]{1,30}$")
 
 class UnknownCompany(ValueError):
     pass
+
+
+EMBEDDING_CHANGED_MSG = "embedding model changed; reset with docker compose down -v"
+
+
+class EmbeddingModelMismatch(RuntimeError):
+    """A collection was embedded with a different model than the one configured (D59)."""
+
+    def __init__(self, name: str, stored: str, configured: str) -> None:
+        super().__init__(
+            f"{EMBEDDING_CHANGED_MSG} ({name} was embedded with {stored!r}, "
+            f"EMBEDDING_MODEL is {configured!r})"
+        )
 
 
 def collection_name(company_id: str, version: int, known_companies: Iterable[str]) -> str:
@@ -31,7 +45,9 @@ def collection_name(company_id: str, version: int, known_companies: Iterable[str
 
 
 class VectorStore:
-    def __init__(self, persist_dir: Path) -> None:
+    def __init__(self, persist_dir: Path, embedder: Embedder | None = None) -> None:
+        # D59: we embed ourselves (documents vs queries differ for bge); Chroma only stores.
+        self.embedder = embedder or MiniLmEmbedder()
         persist_dir.mkdir(parents=True, exist_ok=True)
         self._client = chromadb.PersistentClient(
             path=str(persist_dir), settings=ChromaSettings(anonymized_telemetry=False)
@@ -44,7 +60,11 @@ class VectorStore:
         is dropped first, so a retry always starts clean.
         """
         self.drop(name)
-        col = self._client.create_collection(name, configuration={"hnsw": {"space": "cosine"}})
+        col = self._client.create_collection(
+            name,
+            configuration={"hnsw": {"space": "cosine"}},
+            metadata={"embedding_model": self.embedder.name},
+        )
         for i in range(0, len(chunks), batch_size):
             self._add_batch(col, chunks[i : i + batch_size])
         written = col.count()
@@ -56,6 +76,7 @@ class VectorStore:
         col.add(
             ids=[c.chunk_id for c in batch],
             documents=[c.text for c in batch],
+            embeddings=self.embedder.embed_documents([c.text for c in batch]),
             metadatas=[c.metadata() for c in batch],
         )
 
@@ -72,10 +93,25 @@ class VectorStore:
         except NotFoundError:
             return False
 
+    def model_of(self, name: str) -> str:
+        """Embedding model a collection was written with; none recorded = minilm (D59)."""
+        meta = self._client.get_collection(name).metadata or {}
+        return str(meta.get("embedding_model", DEFAULT_MODEL))
+
+    def check_model(self, name: str) -> None:
+        stored = self.model_of(name)
+        if stored != self.embedder.name:
+            raise EmbeddingModelMismatch(name, stored, self.embedder.name)
+
     def query(self, name: str, text: str, k: int) -> list[RetrievedChunk]:
         col = self._client.get_collection(name)
+        stored = str((col.metadata or {}).get("embedding_model", DEFAULT_MODEL))
+        if stored != self.embedder.name:  # never compare vectors from two different models
+            raise EmbeddingModelMismatch(name, stored, self.embedder.name)
         res = col.query(
-            query_texts=[text], n_results=k, include=["documents", "metadatas", "distances"]
+            query_embeddings=[self.embedder.embed_query(text)],
+            n_results=k,
+            include=["documents", "metadatas", "distances"],
         )
         return [
             _to_chunk(doc, meta, 1.0 - float(dist))  # cosine similarity

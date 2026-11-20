@@ -85,7 +85,9 @@ def ingest_policy(
                 f"{company_id}: v{policy.version} is not newer than active v{active.version}"
             )
 
-        registry.record_pending(company_id, policy.version, name, policy.doc_title)
+        registry.record_pending(
+            company_id, policy.version, name, policy.doc_title, store.embedder.name
+        )
         try:
             count = store.write_chunks(name, chunks, settings.ingest_batch_size)
             registry.activate(company_id, policy.version, name, count)

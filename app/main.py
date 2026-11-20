@@ -12,6 +12,7 @@ from pydantic import BaseModel
 
 from app.auth import current_principal, require_admin
 from app.config import Settings, get_settings
+from app.embeddings import make_embedder
 from app.errors import not_allowed, validation_message
 from app.ingest.service import (
     IngestFailed,
@@ -61,7 +62,7 @@ def create_app(
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         reg = registry or Registry(s.registry_path)
         reg.init_schema()
-        vs = store or VectorStore(s.chroma_dir)
+        vs = store or VectorStore(s.chroma_dir, make_embedder(s.embedding_model, s.bge_model_dir))
         app.state.settings, app.state.registry, app.state.store = s, reg, vs
         app.state.llm = llm or make_llm(s)
         if not app.state.llm.ready:  # D38: one warning, then the app still starts
@@ -70,6 +71,10 @@ def create_app(
                 app.state.llm.provider,
             )
         app.state.reconcile_outcomes = reconcile(reg, vs)  # D16: before seeding
+        for company_id in s.companies:  # D59: refuse to search vectors from another model
+            active = reg.active(company_id)
+            if active:
+                vs.check_model(active.collection_name)
         app.state.seed_outcomes = seed_policies(reg, vs, s)
         app.state.bm25 = Bm25Cache()  # D56: warm one index per active collection
         for company_id in s.companies:

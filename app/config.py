@@ -38,6 +38,11 @@ class Settings(BaseSettings):
     # highest tau with zero false refusals. Margin is thin (0.017); see EVAL_REPORT §4.
     retrieval_min_score: float = 0.38
 
+    # D59: which embedder writes and searches collections. Changing it needs a fresh volume
+    # (docker compose down -v); the app refuses to start on a mismatch.
+    embedding_model: Literal["minilm", "bge-small"] = "minilm"
+    bge_model_dir: Path = Path("models/bge-small-en-v1.5")
+
     data_dir: Path = Path("var")
     policies_dir: Path = Path("data/policies")
 
