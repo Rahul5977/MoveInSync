@@ -148,7 +148,7 @@ The author reviewed every answer by hand: 0 disagreements with the automatic sco
 
 ## 6. Design decisions (summary)
 
-Full log with ~57 decisions and their reasons: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+Full log with 59 decisions and their reasons: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 - **Company from the JWT only.** No request field can name a company, collection or version;
   extra fields are rejected (422). Unknown company/role → 403.
@@ -187,7 +187,9 @@ Full log with ~57 decisions and their reasons: [docs/ARCHITECTURE.md](docs/ARCHI
 - **Retrieval misses from vocabulary mismatch** ("fined" vs "deducted", "in advance" vs "cut-off",
   "sat" vs "Saturday"). They fail safe ("not covered"). The hybrid BM25 + RRF bonus is built
   (`RETRIEVAL_MODE=hybrid`) but **vector stays the default**: hit@3 didn't improve and one case got
-  worse. Query rewriting or a stronger embedding model is the real fix.
+  worse. A stronger embedder (bge-small, D59) was also measured and **not merged**: hit@3 0.893 →
+  0.929 but one case got worse, and its scores no longer separate off-topic questions (τ margin
+  +0.017 → −0.039). Next to try: query rewriting or re-ranking the pool, keeping MiniLM for τ.
 - **Cross-company questions are refused**, not answered with the user's own rule. Less helpful,
   but it can never be mistaken for another company's rule.
 - **Fixed refusal text** hides the model's reason for refusing, so a refusal can never contain a guess.
