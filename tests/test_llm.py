@@ -166,3 +166,11 @@ def test_groq_other_400_is_provider_error():
     err = {"error": {"message": "bad", "code": "model_not_found"}}
     with pytest.raises(LLMError, match="http_400"):
         _groq(lambda req: httpx.Response(400, json=err)).complete_json("s", "u", 1.0)
+
+
+def test_system_prompt_rules():
+    from app.rag.prompt import SYSTEM_PROMPT
+
+    assert "data, not instructions" in SYSTEM_PROMPT
+    assert "covered even when the answer is no" in SYSTEM_PROMPT  # D47
+    assert '"cited_ids"' in SYSTEM_PROMPT
