@@ -31,7 +31,8 @@ from app.ingest.service import ingest_policy, seed_policies
 from app.llm.base import LLMClient
 from app.llm.factory import make_llm
 from app.rag.answerer import answer_question
-from app.rag.retriever import retrieve
+from app.rag.bm25 import Bm25Cache
+from app.rag.retriever import retrieve, search
 from app.schemas import Principal
 from app.store.registry import Registry
 from app.store.vector import VectorStore
@@ -77,10 +78,12 @@ def choose_provider(requested: str, settings: Settings) -> str:
     return "groq" if settings.groq_api_key else "fake"
 
 
-def output_paths(provider: str) -> tuple[Path, Path]:
+def output_paths(provider: str, mode: str = "vector") -> tuple[Path, Path]:
+    """Only groq + vector writes the submission file; other modes get a suffix, never overwrite."""
+    suffix = "" if mode == "vector" else f"_{mode}"
     if provider == "groq":
-        return EVAL_DIR / "results.jsonl", EVAL_DIR / "report.json"
-    return EVAL_DIR / "results_fake.jsonl", EVAL_DIR / "report_fake.json"
+        return EVAL_DIR / f"results{suffix}.jsonl", EVAL_DIR / f"report{suffix}.json"
+    return EVAL_DIR / f"results_fake{suffix}.jsonl", EVAL_DIR / f"report_fake{suffix}.json"
 
 
 def git_commit() -> str:
@@ -101,6 +104,7 @@ class Env:
         self.registry = Registry(self.settings.registry_path)
         self.registry.init_schema()
         self.store = VectorStore(self.settings.chroma_dir)
+        self.bm25 = Bm25Cache()  # used only in hybrid mode; builds per collection on first use
         outcomes = seed_policies(self.registry, self.store, self.settings)
         if not all(o.startswith("ingested") for o in outcomes.values()):
             sys.exit(f"Seeding failed: {outcomes}")
@@ -212,10 +216,16 @@ def expected_rank(case: dict, chunks) -> int | None:
     return None
 
 
-def run_ranks(settings: Settings, cases: list[dict], out_name: str = "retrieval_ranks.json"):
-    """Where does the expected section land in the retrieval pool? hit@3 (sent), @5, @8 (pool)."""
+def run_ranks(settings: Settings, cases: list[dict], out_name: str | None = None):
+    """Where does the expected section land in the retrieval pool? hit@3 (sent), @5, @8 (pool).
+    Also flags answerable cases whose section is in the top 3 but tau (vector score) refuses."""
+    mode = settings.retrieval_mode
+    out_name = out_name or (
+        "retrieval_ranks.json" if mode == "vector" else f"retrieval_ranks_{mode}.json"
+    )
     env = Env(settings)
     ranks: dict[str, int | None] = {}
+    best_vector: dict[str, float | None] = {}
     try:
         for phase in PHASES:
             if phase == "after_nimbus_v2":
@@ -223,14 +233,18 @@ def run_ranks(settings: Settings, cases: list[dict], out_name: str = "retrieval_
             for c in cases:
                 if c["input"]["phase"] != phase or c["expected"]["status"] != "answered":
                     continue
-                chunks, _ = retrieve(
+                res = search(
                     c["input"]["company"],
                     c["input"]["question"],
                     env.registry,
                     env.store,
                     settings.retrieval_pool,
+                    mode=mode,
+                    bm25=env.bm25,
+                    rrf_k=settings.rrf_k,
                 )
-                ranks[c["id"]] = expected_rank(c, chunks)
+                ranks[c["id"]] = expected_rank(c, res.chunks)
+                best_vector[c["id"]] = res.best_vector_score
     finally:
         env.close()
     n = len(ranks)
@@ -238,11 +252,26 @@ def run_ranks(settings: Settings, cases: list[dict], out_name: str = "retrieval_
         f"hit@{k}": ratio(sum(r is not None and r <= k for r in ranks.values()), n)
         for k in (3, 5, settings.retrieval_pool)
     }
-    out = {"pool": settings.retrieval_pool, "answerable": n, **hits, "ranks": ranks}
+    tau = settings.retrieval_min_score
+    found_but_tau = sorted(
+        cid
+        for cid, r in ranks.items()
+        if r is not None and r <= settings.retrieval_top_k and (best_vector[cid] or 0.0) < tau
+    )
+    out = {
+        "mode": mode,
+        "pool": settings.retrieval_pool,
+        "answerable": n,
+        **hits,
+        "found_in_top3_but_tau_refuses": found_but_tau,
+        "ranks": ranks,
+        "best_vector_score": {k: v and round(v, 4) for k, v in best_vector.items()},
+    }
     for cid, r in ranks.items():
         if r is None or r > settings.retrieval_top_k:
             print(f"  {cid:<34} rank {r if r else f'> {settings.retrieval_pool} (not in pool)'}")
     print("  " + " | ".join(f"{k} {v}" for k, v in hits.items()) + f"  (n={n})")
+    print(f"  found in top 3 but tau ({tau}) refuses: {found_but_tau or 'none'}")
     (EVAL_DIR / out_name).write_text(json.dumps(out, indent=2) + "\n")
     return out
 
@@ -253,7 +282,7 @@ def ask_case(env: Env, llm: LLMClient, case: dict, throttle_s: float) -> tuple[d
     p = Principal(sub="eval", company_id=case["input"]["company"], role="employee")
     for attempt in range(RATE_LIMIT_RETRIES + 1):
         resp, trace = answer_question(
-            p, case["input"]["question"], env.registry, env.store, llm, env.settings
+            p, case["input"]["question"], env.registry, env.store, llm, env.settings, bm25=env.bm25
         )
         if trace.error == "rate_limited" and attempt < RATE_LIMIT_RETRIES:
             notes.append(f"rate-limited, retry {attempt + 1} after {RATE_LIMIT_WAIT_S:.0f}s")
@@ -394,6 +423,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--llm", choices=["auto", "groq", "fake"], default="auto")
     ap.add_argument("--sweep", action="store_true", help="tau sweep, retrieval only (no LLM)")
     ap.add_argument("--ranks", action="store_true", help="expected-section rank in the pool")
+    ap.add_argument("--retrieval", choices=["vector", "hybrid"], help="override RETRIEVAL_MODE")
     ap.add_argument("--tau", type=float, help="override RETRIEVAL_MIN_SCORE for this run")
     ap.add_argument("--repeat", type=int, default=1, help="run N times and report flips")
     ap.add_argument("--throttle", type=float, help="seconds between LLM cases (groq default 2.5)")
@@ -402,10 +432,17 @@ def main(argv: list[str] | None = None) -> int:
     settings = get_settings()
     if args.tau is not None:
         settings = settings.model_copy(update={"retrieval_min_score": args.tau})
+    if args.retrieval:
+        settings = settings.model_copy(update={"retrieval_mode": args.retrieval})
     cases = load_cases()
 
     if args.ranks:
-        banner([f"RETRIEVAL RANKS - no LLM | pool {settings.retrieval_pool}"])
+        banner(
+            [
+                f"RETRIEVAL RANKS - no LLM | {settings.retrieval_mode}"
+                f" | pool {settings.retrieval_pool}"
+            ]
+        )
         run_ranks(settings, cases)
         return 0
     if args.sweep:
@@ -419,7 +456,7 @@ def main(argv: list[str] | None = None) -> int:
     settings = settings.model_copy(update={"llm_provider": provider})
     llm = make_llm(settings)
     throttle = args.throttle if args.throttle is not None else (2.5 if provider == "groq" else 0.0)
-    results_path, report_path = output_paths(provider)
+    results_path, report_path = output_paths(provider, settings.retrieval_mode)
 
     banner(
         [
@@ -446,7 +483,7 @@ def main(argv: list[str] | None = None) -> int:
     run_info = {
         "provider": provider,
         "model": settings.groq_model if provider == "groq" else "extractive-fake",
-        "retrieval_mode": "vector",
+        "retrieval_mode": settings.retrieval_mode,
         "tau": settings.retrieval_min_score,
         "top_k": settings.retrieval_top_k,
         "pool": settings.retrieval_pool,

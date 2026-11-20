@@ -52,6 +52,7 @@ def settings(tmp_path):
 def test_output_paths_fake_never_writes_submission_file():
     assert run_eval.output_paths("fake")[0].name == "results_fake.jsonl"
     assert run_eval.output_paths("groq")[0].name == "results.jsonl"
+    assert run_eval.output_paths("groq", "hybrid")[0].name == "results_hybrid.jsonl"
 
 
 def test_choose_provider_auto(settings):
@@ -107,3 +108,11 @@ def test_ranks_reports_expected_section_position(settings, tmp_path, monkeypatch
     out = run_eval.run_ranks(settings, CASES)
     assert out["ranks"] == {"v1": 1, "v2": 1} and out["hit@3"] == 1.0  # v2 case finds a v2 chunk
     assert (tmp_path / "retrieval_ranks.json").exists()
+
+
+def test_ranks_hybrid_mode_writes_its_own_file(settings, tmp_path, monkeypatch):
+    monkeypatch.setattr(run_eval, "EVAL_DIR", tmp_path)
+    hybrid = settings.model_copy(update={"retrieval_mode": "hybrid"})
+    out = run_eval.run_ranks(hybrid, CASES)
+    assert out["mode"] == "hybrid" and out["ranks"] == {"v1": 1, "v2": 1}
+    assert (tmp_path / "retrieval_ranks_hybrid.json").exists()
