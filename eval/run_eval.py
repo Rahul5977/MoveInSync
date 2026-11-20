@@ -35,7 +35,7 @@ from app.rag.retriever import retrieve
 from app.schemas import Principal
 from app.store.registry import Registry
 from app.store.vector import VectorStore
-from eval.scoring import contains, percentile, score_case
+from eval.scoring import contains, parse_chunk_id, percentile, score_case
 
 EVAL_DIR = Path(__file__).resolve().parent
 CASES = EVAL_DIR / "cases.jsonl"
@@ -199,6 +199,54 @@ def run_sweep(settings: Settings, cases: list[dict]) -> dict:
 # ---------------------------------------------------------------- full eval
 
 
+# ---------------------------------------------------------------- retrieval ranks (no LLM)
+
+
+def expected_rank(case: dict, chunks) -> int | None:
+    """1-based rank of the first pooled chunk from an expected section of the right version."""
+    want = set(case["expected"]["sections"])
+    for i, ch in enumerate(chunks, 1):
+        parsed = parse_chunk_id(ch.chunk_id)
+        if parsed and parsed[1] == case["expected"]["version"] and parsed[2] in want:
+            return i
+    return None
+
+
+def run_ranks(settings: Settings, cases: list[dict], out_name: str = "retrieval_ranks.json"):
+    """Where does the expected section land in the retrieval pool? hit@3 (sent), @5, @8 (pool)."""
+    env = Env(settings)
+    ranks: dict[str, int | None] = {}
+    try:
+        for phase in PHASES:
+            if phase == "after_nimbus_v2":
+                env.ingest_update()
+            for c in cases:
+                if c["input"]["phase"] != phase or c["expected"]["status"] != "answered":
+                    continue
+                chunks, _ = retrieve(
+                    c["input"]["company"],
+                    c["input"]["question"],
+                    env.registry,
+                    env.store,
+                    settings.retrieval_pool,
+                )
+                ranks[c["id"]] = expected_rank(c, chunks)
+    finally:
+        env.close()
+    n = len(ranks)
+    hits = {
+        f"hit@{k}": ratio(sum(r is not None and r <= k for r in ranks.values()), n)
+        for k in (3, 5, settings.retrieval_pool)
+    }
+    out = {"pool": settings.retrieval_pool, "answerable": n, **hits, "ranks": ranks}
+    for cid, r in ranks.items():
+        if r is None or r > settings.retrieval_top_k:
+            print(f"  {cid:<34} rank {r if r else f'> {settings.retrieval_pool} (not in pool)'}")
+    print("  " + " | ".join(f"{k} {v}" for k, v in hits.items()) + f"  (n={n})")
+    (EVAL_DIR / out_name).write_text(json.dumps(out, indent=2) + "\n")
+    return out
+
+
 def ask_case(env: Env, llm: LLMClient, case: dict, throttle_s: float) -> tuple[dict, list[str]]:
     """Run one case through the real answerer. Retries only provider rate limits (eval-only)."""
     notes: list[str] = []
@@ -345,6 +393,7 @@ def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawTextHelpFormatter)
     ap.add_argument("--llm", choices=["auto", "groq", "fake"], default="auto")
     ap.add_argument("--sweep", action="store_true", help="tau sweep, retrieval only (no LLM)")
+    ap.add_argument("--ranks", action="store_true", help="expected-section rank in the pool")
     ap.add_argument("--tau", type=float, help="override RETRIEVAL_MIN_SCORE for this run")
     ap.add_argument("--repeat", type=int, default=1, help="run N times and report flips")
     ap.add_argument("--throttle", type=float, help="seconds between LLM cases (groq default 2.5)")
@@ -355,6 +404,10 @@ def main(argv: list[str] | None = None) -> int:
         settings = settings.model_copy(update={"retrieval_min_score": args.tau})
     cases = load_cases()
 
+    if args.ranks:
+        banner([f"RETRIEVAL RANKS - no LLM | pool {settings.retrieval_pool}"])
+        run_ranks(settings, cases)
+        return 0
     if args.sweep:
         banner([f"TAU SWEEP (retrieval only, no LLM) - {len(cases)} cases"])
         run_sweep(settings, cases)

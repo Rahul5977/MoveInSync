@@ -100,3 +100,10 @@ def test_real_cases_file_is_valid():
 def test_d51_violation_detected():
     bad = _case("x", "nimbus", "Is it after 10 PM?", "answered", exc=["10 PM"])
     assert run_eval.question_terms_forbidden([bad]) == {"x": ["10 PM"]}
+
+
+def test_ranks_reports_expected_section_position(settings, tmp_path, monkeypatch):
+    monkeypatch.setattr(run_eval, "EVAL_DIR", tmp_path)
+    out = run_eval.run_ranks(settings, CASES)
+    assert out["ranks"] == {"v1": 1, "v2": 1} and out["hit@3"] == 1.0  # v2 case finds a v2 chunk
+    assert (tmp_path / "retrieval_ranks.json").exists()
