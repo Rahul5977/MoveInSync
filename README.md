@@ -198,7 +198,25 @@ Full log with 59 decisions and their reasons: [docs/ARCHITECTURE.md](docs/ARCHIT
   users get `try_again`. A hosted model can be retired without notice (it happened; fixed by one setting).
 - **English-only embeddings** (MiniLM, 256 tokens); **single process** (the ingest lock is per process).
 
-## 9. Repo layout
+## 9. What I'd build next
+
+Each item: what it fixes, and what it costs.
+
+- **First, 10–15 new held-out questions** (paraphrases and vocabulary mismatches). The 35 cases have
+  already been used for tuning, so any retrieval change below needs fresh questions to be judged on.
+- **Cross-encoder reranker.** Fixes ranking with no extra LLM call. Each company has ~22 chunks, so
+  it can score all of them, which also reaches the 2 misses outside the top 8. Costs ~50–200 ms
+  per question and ~90 MB in the image.
+- **Query rewriting.** Likely fixes all 3 vocabulary misses ("fined", "in advance", "sat"). Costs the
+  2nd LLM call (today's repair/retry slot), ~0.5–0.8 s, and a second prompt-injection surface; τ
+  would stay on the original question.
+- **Stronger embedder.** Needs a recalibrated or relative not-covered gate first: with bge-small
+  the off-topic and answerable scores overlap (EVAL_REPORT §3.4).
+- **Scale.** Postgres with a database-level ingest lock (several workers); background ingestion with
+  a job status endpoint; PDF/DOCX parsing; an answer cache keyed by company + active version +
+  question, so a new policy version never serves a stale answer.
+
+## 10. Repo layout
 
 ```
 app/
