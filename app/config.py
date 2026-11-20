@@ -2,6 +2,7 @@
 
 from functools import lru_cache
 from pathlib import Path
+from typing import Literal
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -9,6 +10,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
+    llm_provider: Literal["groq", "fake"] = "groq"  # D18: "fake" runs everything without a key
     groq_api_key: str = ""
     groq_model: str = "llama-3.1-8b-instant"
 
@@ -17,8 +19,16 @@ class Settings(BaseSettings):
     jwt_algorithm: str = "HS256"
     jwt_ttl_minutes: int = 60
 
-    llm_timeout_s: float = 2.0
+    # D20: one request-level budget every step draws from; repair call only if enough is left.
+    request_deadline_s: float = 2.8
+    repair_min_remaining_s: float = 1.0
+    llm_min_remaining_s: float = 0.3  # below this, don't even start an LLM call
+    llm_timeout_s: float = 2.5  # hard cap per call (also bounded by the remaining deadline)
+
+    # D22: candidate pool from the vector store, top-k of it sent to the LLM (= max citations).
+    retrieval_pool: int = 8
     retrieval_top_k: int = 3
+    # D5: tau, the off-topic gate on best cosine similarity. Placeholder until the Phase 4 sweep.
     retrieval_min_score: float = 0.35
 
     data_dir: Path = Path("var")
