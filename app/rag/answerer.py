@@ -18,7 +18,7 @@ from pydantic import ValidationError
 
 from app.config import Settings
 from app.deadline import Clock, Deadline
-from app.llm.base import LLMClient, LLMError
+from app.llm.base import LLMClient, LLMError, TruncatedOutput
 from app.rag.prompt import SYSTEM_PROMPT, build_repair_prompt, build_user_prompt
 from app.rag.retriever import retrieve
 from app.schemas import (
@@ -143,12 +143,13 @@ def answer_question(
         llm_calls += 1
         try:
             raw = llm.complete_json(SYSTEM_PROMPT, prompt, deadline.remaining())
-        except LLMError as exc:
-            return try_again("llm_error", str(exc))
-        try:
             out = parse_llm_output(raw)
             break
-        except InvalidOutput as exc:
+        except LLMError as exc:
+            return try_again("llm_error", str(exc))
+        except (InvalidOutput, TruncatedOutput) as exc:
+            if isinstance(exc, TruncatedOutput):
+                raw = exc.partial
             if llm_calls >= 2:
                 return try_again("invalid_output", f"invalid after repair: {exc}")
             if deadline.remaining() < settings.repair_min_remaining_s:

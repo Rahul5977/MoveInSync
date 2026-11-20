@@ -294,3 +294,29 @@ def test_ask_flips_after_v2_ingest(settings, token_for):
     assert before["citations"][0]["chunk_id"] == "nimbus_v1_s8_p0" and "8:00 PM" in before["answer"]
     assert after["citations"][0]["chunk_id"] == "nimbus_v2_s8_p0" and "7:30 PM" in after["answer"]
     assert after["meta"]["policy_version"] == 2
+
+
+def test_truncated_output_triggers_repair(settings, token_for):
+    from app.llm.base import TruncatedOutput
+
+    state = {"n": 0}
+
+    def responder(system, user):
+        state["n"] += 1
+        if state["n"] == 1:
+            raise TruncatedOutput('{"covered": true, "answer": "Escort is req')
+        assert "truncated" in user
+        return reply()(system, user)
+
+    with app_with(settings, FakeLLM(responder)) as client:
+        body = ask(client, "nimbus", ESCORT_Q, token_for).json()
+    assert body["status"] == "answered" and body["meta"]["llm_calls"] == 2
+
+
+def test_truncated_twice_is_try_again(settings, token_for):
+    from app.llm.base import TruncatedOutput
+
+    llm = FakeLLM([TruncatedOutput('{"cov'), TruncatedOutput('{"cov')])
+    with app_with(settings, llm) as client:
+        r = ask(client, "nimbus", ESCORT_Q, token_for)
+    assert r.status_code == 503 and r.json()["meta"]["llm_calls"] == 2

@@ -6,7 +6,7 @@ A missing key is NOT a startup error (D18): the app still starts, /ask returns t
 
 import httpx
 
-from app.llm.base import LLMError
+from app.llm.base import LLMError, TruncatedOutput
 
 GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
 
@@ -50,6 +50,10 @@ class GroqLLM:
         if resp.status_code >= 400:
             raise LLMError(f"http_{resp.status_code}")
         try:
-            return resp.json()["choices"][0]["message"]["content"]
+            choice = resp.json()["choices"][0]
+            content = choice["message"]["content"]
         except (KeyError, IndexError, TypeError, ValueError) as exc:
             raise LLMError("malformed_provider_response") from exc
+        if choice.get("finish_reason") == "length":
+            raise TruncatedOutput(content or "")
+        return content

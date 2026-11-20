@@ -126,3 +126,19 @@ def test_sections_in_round_trips_escaped_text():
 def test_factory_picks_provider():
     assert isinstance(make_llm(Settings(llm_provider="fake")), ExtractiveLLM)
     assert isinstance(make_llm(Settings(llm_provider="groq", groq_api_key="")), GroqLLM)
+
+
+def test_groq_finish_reason_length_is_truncated_output():
+    from app.llm.base import TruncatedOutput
+
+    resp = httpx.Response(
+        200,
+        json={
+            "choices": [
+                {"message": {"content": '{"covered": true, "ans'}, "finish_reason": "length"}
+            ]
+        },
+    )
+    with pytest.raises(TruncatedOutput) as info:
+        _groq(lambda req: resp).complete_json("s", "u", 1.0)
+    assert info.value.partial == '{"covered": true, "ans'
