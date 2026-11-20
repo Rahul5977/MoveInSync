@@ -34,6 +34,10 @@ class Settings(BaseSettings):
     # D56/D57: "hybrid" = vector + BM25 fused with RRF (k = 60). tau always uses the vector score.
     retrieval_mode: Literal["vector", "hybrid"] = "vector"
     rrf_k: int = 60
+    # D61: on covered=false, retrieve once more with the model's search_query (answer call #2
+    # answers the ORIGINAL question). Only if round 1 used 1 call and >= 1.2 s is left.
+    rewrite_on_miss: Literal["off", "on"] = "off"
+    rewrite_min_remaining_s: float = 1.2
     # D5/D52: tau, the off-topic gate on best cosine similarity. From the eval sweep (D50):
     # highest tau with zero false refusals. Margin is thin (0.017); see EVAL_REPORT §4.
     retrieval_min_score: float = 0.38
