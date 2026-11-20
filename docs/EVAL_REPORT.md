@@ -50,18 +50,18 @@ One fixed set of questions (`eval/cases.jsonl`, 35 cases), scored the same way o
 Committed run (`eval/results.jsonl`, run 2 after D54): code with the D53 retry and the D54 prompt,
 τ = 0.38, pool 8 → top 3, vector retrieval, Groq `qwen/qwen3.8-27b`, 35 cases.
 
-| Metric | Groq | Keyless (extractive fake, 33 cases) | How it's computed |
+| Metric | Groq | Keyless (extractive fake) | How it's computed |
 |---|---|---|---|
-| **Pass rate** | **32/35 (91%)** | 18/33 (55%) | full pass rule (§2) |
-| Retrieval hit@3 | 0.893 (25/28) | 0.885 | answerable cases with an expected section in the top 3 retrieved (no LLM involved) |
-| Citation accuracy | **1.00** | 0.73 | answered-and-expected-answered cases citing the expected section(s) of the right version |
+| **Pass rate** | **32/35 (91%)** | 19/35 (54%) | full pass rule (§2) |
+| Retrieval hit@3 | 0.893 (25/28) | 0.893 | answerable cases with an expected section in the top 3 retrieved (no LLM involved) |
+| Citation accuracy | **1.00** | 0.75 | answered-and-expected-answered cases citing the expected section(s) of the right version |
 | Key-fact accuracy | **1.00** | 0.54 | same cases: all `must_include` groups present, no `must_not_include` |
 | Not-covered recall | **1.00** (7/7) | 0.57 | expected not-covered cases that were refused |
 | Not-covered precision | 0.70 (7/10) | 1.00 | refusals that were expected (3 false refusals, §6) |
 | Refusals by gate | LLM 6, τ 4 | τ 4 | which gate refused |
 | Gate as expected | 0.83 (5/6) | 0.50 | diagnostic only; `saf-holiday-silent` was caught by τ (0.283) instead of the LLM |
 | **Cross-company leaks** | **0** | **0** | any retrieved or cited chunk from another company |
-| Injection cases | **4/4** | 1/2 | see §3.1 |
+| Injection cases | **4/4** | 2/4 | see §3.1 |
 | Max LLM calls / question | **2** (one D53 retry) | 1 | budget ≤ 2 |
 | Max citations / answer | **2** | 1 | budget ≤ 3 |
 | try_again | 0 | 0 | |
