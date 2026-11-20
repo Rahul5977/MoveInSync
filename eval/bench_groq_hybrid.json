@@ -1,0 +1,46 @@
+{
+  "timestamp": "2026-11-20T15:15:03+00:00",
+  "base": "http://localhost:8000",
+  "health": {
+    "status": "ok",
+    "llm": {
+      "provider": "groq",
+      "ready": true
+    }
+  },
+  "n": 30,
+  "throttle_s": 12.0,
+  "warmup_requests": 3,
+  "label": "hybrid groq",
+  "client_ms": {
+    "p50": 728,
+    "p95": 917,
+    "max": 2098
+  },
+  "server_ms": {
+    "p50": 719,
+    "p95": 908
+  },
+  "statuses": {
+    "answered": 26,
+    "not_covered": 4
+  },
+  "client_ms_by_status": {
+    "answered": {
+      "n": 26,
+      "p50": 728,
+      "p95": 911,
+      "max": 917
+    },
+    "not_covered": {
+      "n": 4,
+      "p50": 713,
+      "p95": 2098,
+      "max": 2098
+    }
+  },
+  "llm_calls_histogram": {
+    "1": 30
+  },
+  "under_3s_p95": true
+}

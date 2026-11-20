@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-11-20T14:09:00+00:00",
+  "timestamp": "2026-11-20T15:15:31+00:00",
   "base": "http://localhost:8000",
   "health": {
     "status": "ok",
@@ -10,14 +10,16 @@
   },
   "n": 60,
   "throttle_s": 0.2,
+  "warmup_requests": 3,
+  "label": "vector fake",
   "client_ms": {
-    "p50": 123,
-    "p95": 207,
-    "max": 231
+    "p50": 182,
+    "p95": 317,
+    "max": 502
   },
   "server_ms": {
-    "p50": 119,
-    "p95": 204
+    "p50": 177,
+    "p95": 312
   },
   "statuses": {
     "answered": 60
@@ -25,9 +27,9 @@
   "client_ms_by_status": {
     "answered": {
       "n": 60,
-      "p50": 123,
-      "p95": 207,
-      "max": 231
+      "p50": 182,
+      "p95": 317,
+      "max": 502
     }
   },
   "llm_calls_histogram": {

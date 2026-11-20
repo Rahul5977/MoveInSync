@@ -142,20 +142,27 @@ top 3 but τ refused it.
 **Secondary (one Groq run, hybrid, `eval/results_hybrid.jsonl`):** **32/35**, identical status and
 citations to the vector run on every case; same 3 failures; 0 leaks; max 1 LLM call.
 
-**Latency.** The planned Groq bench (6 s, then 12 s throttle) could not run: Groq's **daily**
-token limit (200,000 TPD on this key) was used up by the day's evals (see §8), so every request got
-a 429. The LLM call is identical in both modes; only retrieval differs. So the difference was
-measured directly: same `scripts/bench.py`, Docker, end to end over HTTP, keyless fake LLM, 60
-requests per mode (`eval/bench_fake_vector.json`, `eval/bench_fake_hybrid.json`):
+**Latency (bench, Docker, end to end over HTTP).** Same build, fresh volume per run, 3 untimed
+warm-up requests (τ-refused, so no LLM tokens), same 26 questions cycled. Groq runs: 30 requests at
+a 12 s throttle, **0 rate limits**. Keyless runs: 60 requests, fake LLM, so only retrieval differs.
 
-| Mode (HTTP, fake LLM) | p50 | p95 | max |
+| Mode | Groq answered p50 / p95 / max (n = 26) | Groq all 30, max | Keyless p50 / p95 / max (n = 60) |
 |---|---|---|---|
-| vector | 123 ms | 207 ms | 231 ms |
-| hybrid | 120 ms | 138 ms | 179 ms |
+| vector | 789 / **992** / 1,057 ms | 1,318 ms | 182 / 317 / 502 ms |
+| hybrid | 728 / **911** / 917 ms | 2,098 ms | 176 / 258 / 415 ms |
 
-**BM25 + RRF adds no measurable latency** (an in-memory index of ~22 chunks per company; the
-difference is noise). With Groq, the in-process eval gave LLM-case p50/p95 of 469/722 ms (vector)
-and 467/830 ms (hybrid); that gap comes from provider variance, since the prompts are the same.
+Files: `eval/bench_groq_vector.json`, `eval/bench_groq_hybrid.json`, `eval/bench_fake_vector.json`,
+`eval/bench_fake_hybrid.json`.
+- **BM25 + RRF adds no measurable latency**: an in-memory index of ~22 chunks per company. Hybrid
+  came out slightly *faster* in both pairs; that is noise, not a speed-up. The machine alone varies
+  by ~50% between runs (an earlier keyless pair without warm-up gave 123/207 ms vector, 120/138 ms
+  hybrid).
+- Both modes keep **p95 < 3 s** with a real LLM call. The slowest single request (hybrid, 2,098 ms)
+  was a not-covered answer, i.e. Groq's response time; still under budget.
+- Groq latency in these runs (p50 ~730–790 ms) is higher than the earlier 6 s run (567 ms): the
+  provider varies by time of day; both are reported.
+- A first attempt at this bench failed: the earlier key's **daily** quota was used up (every request
+  429, see §8). It was rerun on a fresh quota.
 
 **Decision (D57): vector stays the default.** Hybrid doesn't improve hit@3 (what reaches the
 model), and it has one regression (`nim-weekend-typo` 4 → 8, hit@5 0.929 → 0.893). It stays as a
@@ -288,7 +295,8 @@ production version would add a startup probe that checks the configured model ex
   and a startup model probe.
 - **Free-tier quota**: this key allows 8,000 tokens/minute and 200,000 tokens/day; one `/ask`
   uses ~1,200–1,600 tokens, so ~5 requests/minute and ~130 a day. Today's evals and benches used
-  the daily quota (all requests 429 by 19:30 IST), which blocked the Groq latency bench for hybrid.
+  the daily quota (all requests 429 by 19:30 IST); the hybrid latency bench was rerun on a fresh
+  quota (§3.3).
 - **429s aren't retried** in the API (by design, D53): under free-tier limits some users get `try_again`.
 - **English-only embeddings** (MiniLM, 256 tokens); abbreviations like "sat" are weak.
 - **Single process**: the ingest lock is per-process (one uvicorn worker).
