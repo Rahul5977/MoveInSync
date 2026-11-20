@@ -42,7 +42,12 @@ class FailingStore(VectorStore):
         super()._add_batch(col, batch)
 
 
-def test_startup_ingests_seed_only(client):
+def test_startup_ingests_seed_only(cold_settings):
+    with TestClient(create_app(cold_settings)) as client:
+        _assert_seed_only(client)
+
+
+def _assert_seed_only(client):
     st = client.app.state
     assert st.seed_outcomes == {
         "kestrel": "ingested v1",
@@ -98,7 +103,8 @@ def test_failed_ingest_leaves_old_version(settings, token_for):
         assert reg.active("nimbus").version == 2
 
 
-def test_restart_keeps_v2(settings, token_for):
+def test_restart_keeps_v2(cold_settings, token_for):
+    settings = cold_settings
     with TestClient(create_app(settings)) as client:
         assert _ingest(client, token_for, "nimbus", "updates/nimbus/v2.md").status_code == 201
 
