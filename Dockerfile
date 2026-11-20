@@ -12,6 +12,12 @@ RUN uv sync --frozen --no-dev --no-install-project
 # a cold download (would blow the 3 s budget) and the container works offline.
 RUN uv run --no-sync python -c "from chromadb.utils.embedding_functions import DefaultEmbeddingFunction as E; E()(['warmup'])"
 
+# D59: bake bge-small (pinned HF revision, ~134 MB) for EMBEDDING_MODEL=bge-small. The script
+# checks SHA-256 and exits non-zero on a mismatch, which fails the build. No runtime download.
+COPY app/__init__.py app/embeddings.py ./app/
+COPY scripts/__init__.py scripts/fetch_bge.py ./scripts/
+RUN uv run --no-sync python -m scripts.fetch_bge --dir models/bge-small-en-v1.5
+
 COPY app ./app
 COPY scripts ./scripts
 COPY eval ./eval
