@@ -10,6 +10,7 @@ Guarantees, all enforced here in code:
 - any LLM failure, invalid output or exhausted deadline -> TRY_AGAIN, never a half answer
 """
 
+import html
 import logging
 import time
 from dataclasses import dataclass, field
@@ -169,6 +170,7 @@ def answer_question(
     return respond(
         AnswerStatus.ANSWERED,
         "answered",
-        out.answer.strip(),
+        # We escape & < > in the prompt, so the model may echo &amp; etc. (D36).
+        html.unescape(out.answer.strip()),
         [render_citation(by_id[cid]) for cid in valid],
     )

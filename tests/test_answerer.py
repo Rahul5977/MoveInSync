@@ -320,3 +320,37 @@ def test_truncated_twice_is_try_again(settings, token_for):
     with app_with(settings, llm) as client:
         r = ask(client, "nimbus", ESCORT_Q, token_for)
     assert r.status_code == 503 and r.json()["meta"]["llm_calls"] == 2
+
+
+def test_answer_is_unescaped_for_the_user(settings, token_for):
+    """We send '&' as '&amp;' in the prompt; a model echoing it must not leak '&amp;' (D36)."""
+    llm = FakeLLM(
+        reply(answer="Approved by Transport Admin &amp; HR, at least 48 h &lt;before&gt;.")
+    )
+    with app_with(settings, llm) as client:
+        body = ask(client, "kestrel", "Who approves an airport trip?", token_for).json()
+    assert body["answer"] == "Approved by Transport Admin & HR, at least 48 h <before>."
+    assert "&amp;" not in r_text(body)
+
+
+def test_section_with_ampersand_round_trips_through_extractive(settings, token_for):
+    """A policy section containing '&' is shown to the user as '&', never '&amp;'."""
+    doc = (
+        "# Nimbus Software — Employee Transport Policy (Version 2, effective 2026-07-01)\n"
+        "## 1. Escort & Safety Rules\nDrops after 7:30 PM need an escort & a GPS check.\n"
+    )
+    with app_with(settings, ExtractiveLLM(), retrieval_min_score=0.0) as client:
+        r = client.post(
+            "/admin/ingest",
+            files={"file": ("v2.md", doc, "text/markdown")},
+            headers=token_for("nimbus", "admin"),
+        )
+        assert r.status_code == 201
+        body = ask(client, "nimbus", "Do drops need an escort and GPS check?", token_for).json()
+    assert body["answer"] == "Drops after 7:30 PM need an escort & a GPS check."
+    assert body["citations"][0]["section"] == "§1 Escort & Safety Rules"
+    assert "&amp;" not in r_text(body)
+
+
+def r_text(body: dict) -> str:
+    return json.dumps(body, ensure_ascii=False)
