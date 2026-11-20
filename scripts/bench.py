@@ -38,6 +38,8 @@ def main(argv: list[str] | None = None) -> int:
         default=3,
         help="untimed off-topic requests first (refused by tau: 0 LLM calls, 0 tokens)",
     )
+    ap.add_argument("--label", default="", help="free text stored in the output, e.g. the mode")
+    ap.add_argument("--out", default="bench.json", help="file name under eval/")
     args = ap.parse_args(argv)
 
     settings = get_settings()
@@ -96,7 +98,7 @@ def main(argv: list[str] | None = None) -> int:
         "n": args.n,
         "throttle_s": args.throttle,
         "warmup_requests": args.warmup,
-        "retrieval_mode": health.get("retrieval_mode"),
+        "label": args.label,
         "client_ms": {
             "p50": round(percentile(wall, 50)),
             "p95": round(percentile(wall, 95)),
@@ -116,7 +118,7 @@ def main(argv: list[str] | None = None) -> int:
         "llm_calls_histogram": {str(k): v for k, v in sorted(calls.items())},
         "under_3s_p95": percentile(wall, 95) < 3000,
     }
-    (EVAL_DIR / "bench.json").write_text(json.dumps(out, indent=2))
+    (EVAL_DIR / args.out).write_text(json.dumps(out, indent=2))
     print(json.dumps(out, indent=2))
     return 0
 
