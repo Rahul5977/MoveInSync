@@ -225,6 +225,8 @@ def ask_case(env: Env, llm: LLMClient, case: dict, throttle_s: float) -> tuple[d
         "latency_ms": resp.meta.latency_ms,
         "policy_version": resp.meta.policy_version,
     }
+    if trace.retried:
+        notes.append(f"retried={trace.retried}")  # D53 connection-level retry (counted)
     if trace.error:
         notes.append(f"error={trace.error}")
     return actual, notes
@@ -298,6 +300,9 @@ def build_report(results, run_info: dict) -> dict:
             "leaks": sum(s.leak for _, _, s, _ in results),
             "injection_passed": f"{by_cat['injection']['pass']}/{by_cat['injection']['total']}",
             "try_again": sum(a["status"] == "try_again" for _, a, _, _ in results),
+            "connection_retries": sum(
+                any(n.startswith("retried=") for n in x) for *_, x in results
+            ),
             "max_llm_calls": max(a["llm_calls"] for _, a, _, _ in results),
             "total_llm_calls": sum(a["llm_calls"] for _, a, _, _ in results),
             "max_citations": max(len(a["citations"]) for _, a, _, _ in results),
