@@ -24,6 +24,9 @@ class Settings(BaseSettings):
     repair_min_remaining_s: float = 1.0
     llm_min_remaining_s: float = 0.3  # below this, don't even start an LLM call
     llm_timeout_s: float = 2.5  # hard cap per call (also bounded by the remaining deadline)
+    # D41/D58: generation settings. Reasoning models (e.g. gpt-oss) need more max_tokens.
+    llm_max_tokens: int = 300
+    llm_temperature: float = 0.0
 
     # D22: candidate pool from the vector store, top-k of it sent to the LLM (= max citations).
     retrieval_pool: int = 8
@@ -37,6 +40,9 @@ class Settings(BaseSettings):
 
     data_dir: Path = Path("var")
     policies_dir: Path = Path("data/policies")
+
+    # D33/D58: roles a token may carry; anything else -> 403. Env: ROLES='["employee","admin"]'
+    roles: set[str] = {"employee", "admin"}
 
     # Server-side allow-list of tenants: company_id -> display name in the policy title.
     # Collection names are only ever built from these ids.

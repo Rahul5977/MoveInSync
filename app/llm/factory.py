@@ -14,4 +14,10 @@ def make_llm(settings: Settings) -> LLMClient:
     if settings.llm_provider == "fake":
         log.info("LLM provider: fake (extractive, no network)")
         return ExtractiveLLM()
-    return GroqLLM(settings.groq_api_key, settings.groq_model, settings.llm_timeout_s)
+    return GroqLLM(
+        settings.groq_api_key,
+        settings.groq_model,
+        settings.llm_timeout_s,
+        max_tokens=settings.llm_max_tokens,
+        temperature=settings.llm_temperature,
+    )

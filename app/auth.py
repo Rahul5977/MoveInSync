@@ -18,7 +18,6 @@ from app.config import Settings, get_settings
 from app.schemas import Principal
 
 _bearer = HTTPBearer(auto_error=False)
-ROLES = frozenset({"employee", "admin"})
 
 
 def issue_token(
@@ -63,7 +62,7 @@ def current_principal(
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid token") from exc
     if principal.company_id not in s.companies:
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Unknown company")
-    if principal.role not in ROLES:
+    if principal.role not in s.roles:
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Unknown role")
     return principal
 

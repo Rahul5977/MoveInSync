@@ -91,3 +91,23 @@ def test_unknown_company_admin_cannot_ingest(client, token_for):
         "/admin/ingest", files={"file": ("p.md", "x")}, headers=token_for("globex", "admin")
     )
     assert r.status_code == 403
+
+
+def test_roles_come_from_settings(settings):
+    """D58: adding a role is a settings change; unknown roles still get 403."""
+    from fastapi.testclient import TestClient
+
+    from app.auth import issue_token
+    from app.llm.fake import FakeLLM
+    from app.main import create_app
+
+    s = settings.model_copy(update={"roles": {"employee", "admin", "desk"}})
+    with TestClient(create_app(s, llm=FakeLLM([]))) as client:
+        for role, code in (("desk", 200), ("auditor", 403)):
+            tok = issue_token("u1", "nimbus", role, s)
+            r = client.post(
+                "/ask",
+                json={"question": "Can I bring my pet dog in the cab?"},
+                headers={"Authorization": f"Bearer {tok}"},
+            )
+            assert r.status_code == code, role

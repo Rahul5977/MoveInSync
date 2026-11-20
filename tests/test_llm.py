@@ -37,6 +37,23 @@ def test_groq_success_returns_content_and_uses_json_mode():
     assert seen["timeout"]["read"] == 1.2  # bounded by the remaining deadline
 
 
+def test_factory_passes_generation_settings_to_groq():
+    """D58: switching to a reasoning model = raise LLM_MAX_TOKENS, no code edit."""
+    s = Settings(
+        _env_file=None, groq_api_key="gsk_test_not_real", llm_max_tokens=1000, llm_temperature=0.2
+    )
+    llm = make_llm(s)
+    seen = {}
+
+    def handler(req: httpx.Request):
+        seen["body"] = json.loads(req.content)
+        return _ok("{}")
+
+    llm._client = httpx.Client(transport=httpx.MockTransport(handler))
+    llm.complete_json("s", "u", 1.0)
+    assert seen["body"]["max_tokens"] == 1000 and seen["body"]["temperature"] == 0.2
+
+
 def test_groq_timeout_capped_by_max():
     seen = {}
 

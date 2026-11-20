@@ -13,11 +13,19 @@ GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
 
 class GroqLLM:
     def __init__(
-        self, api_key: str, model: str, max_timeout_s: float, client: httpx.Client | None = None
+        self,
+        api_key: str,
+        model: str,
+        max_timeout_s: float,
+        client: httpx.Client | None = None,
+        max_tokens: int = 300,
+        temperature: float = 0.0,
     ) -> None:
         self._api_key = api_key
         self._model = model
         self._max_timeout_s = max_timeout_s
+        self._max_tokens = max_tokens
+        self._temperature = temperature
         self._client = client or httpx.Client()  # injectable for tests (httpx.MockTransport)
         self.provider = "groq"
         self.ready = bool(api_key)
@@ -27,8 +35,8 @@ class GroqLLM:
             raise LLMError("no_api_key")
         body = {
             "model": self._model,
-            "temperature": 0,
-            "max_tokens": 300,
+            "temperature": self._temperature,
+            "max_tokens": self._max_tokens,
             "response_format": {"type": "json_object"},
             "messages": [
                 {"role": "system", "content": system},

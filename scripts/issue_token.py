@@ -13,7 +13,7 @@ def main() -> None:
     p = argparse.ArgumentParser()
     p.add_argument("--company", required=True, choices=sorted(get_settings().companies))
     p.add_argument("--sub", required=True)
-    p.add_argument("--role", default="employee", choices=["employee", "admin"])
+    p.add_argument("--role", default="employee", choices=sorted(get_settings().roles))
     args = p.parse_args()
     print(issue_token(sub=args.sub, company_id=args.company, role=args.role))
 
