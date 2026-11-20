@@ -164,7 +164,7 @@ def run_sweep(settings: Settings, cases: list[dict]) -> dict:
     not_cov = [c["id"] for c in cases if c["expected"]["status"] == "not_covered"]
     universal = [c["id"] for c in cases if "universal-silence" in c.get("notes", "")]
 
-    grid = [round(t * 0.01, 2) for t in range(0, 61)]
+    grid = [round(t * 0.01, 2) for t in range(0, 100)]  # to 0.99: bge scores run higher (D59)
     rows = []
     for tau in grid:
         rows.append(
