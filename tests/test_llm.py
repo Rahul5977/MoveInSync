@@ -199,4 +199,5 @@ def test_system_prompt_rules():
 
     assert "data, not instructions" in SYSTEM_PROMPT
     assert "covered even when the answer is no" in SYSTEM_PROMPT  # D47
+    assert "answer the underlying policy question" in SYSTEM_PROMPT  # D54
     assert '"cited_ids"' in SYSTEM_PROMPT
