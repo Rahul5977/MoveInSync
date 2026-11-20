@@ -6,6 +6,8 @@ from contextlib import asynccontextmanager
 from typing import Annotated
 
 from fastapi import Depends, FastAPI, File, HTTPException, Request, UploadFile, status
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
 from app.auth import current_principal, require_admin
@@ -17,11 +19,15 @@ from app.ingest.service import (
     reconcile,
     seed_policies,
 )
-from app.schemas import AskRequest, AskResponse, Principal
+from app.llm.base import LLMClient
+from app.llm.factory import make_llm
+from app.rag.answerer import answer_question
+from app.schemas import AnswerStatus, AskRequest, AskResponse, Principal
 from app.store.registry import Registry, VersionConflict
 from app.store.vector import UnknownCompany, VectorStore
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
+log = logging.getLogger("app")
 
 
 async def only_file_field(request: Request) -> None:
@@ -47,6 +53,7 @@ def create_app(
     settings: Settings | None = None,
     store: VectorStore | None = None,
     registry: Registry | None = None,
+    llm: LLMClient | None = None,
 ) -> FastAPI:
     s = settings or get_settings()
 
@@ -56,23 +63,48 @@ def create_app(
         reg.init_schema()
         vs = store or VectorStore(s.chroma_dir)
         app.state.settings, app.state.registry, app.state.store = s, reg, vs
+        app.state.llm = llm or make_llm(s)
         app.state.reconcile_outcomes = reconcile(reg, vs)  # D16: before seeding
         app.state.seed_outcomes = seed_policies(reg, vs, s)
         yield
 
     app = FastAPI(title="Commute Policy Assistant", version="0.1.0", lifespan=lifespan)
 
+    @app.exception_handler(RequestValidationError)
+    async def plain_validation_error(_: Request, exc: RequestValidationError) -> JSONResponse:
+        """422 with a plain, readable message instead of FastAPI's nested error list."""
+        parts = []
+        for err in exc.errors():
+            loc = ".".join(str(x) for x in err["loc"] if x not in ("body",))
+            parts.append(f"{loc}: {err['msg']}" if loc else err["msg"])
+        return JSONResponse(status_code=422, content={"detail": "; ".join(parts)})
+
     @app.get("/health")
     def health() -> dict[str, str]:
         return {"status": "ok"}
 
-    @app.post("/ask", response_model=AskResponse)
+    @app.post("/ask", response_model=AskResponse, responses={503: {"model": AskResponse}})
     def ask(
         req: AskRequest,
+        request: Request,
         principal: Annotated[Principal, Depends(current_principal)],
-    ) -> AskResponse:
+    ):
         # company_id comes from `principal` (JWT) only — never from `req`.
-        raise HTTPException(status.HTTP_501_NOT_IMPLEMENTED, "answerer not implemented yet")
+        st = request.app.state
+        resp, trace = answer_question(principal, req.question, st.registry, st.store, st.llm, s)
+        log.info(
+            "ask company=%s status=%s gate=%s best=%s sent=%s calls=%d ms=%d",
+            principal.company_id,
+            resp.status,
+            trace.gate,
+            None if trace.best_score is None else round(trace.best_score, 3),
+            trace.sent_ids,
+            resp.meta.llm_calls,
+            resp.meta.latency_ms,
+        )
+        if resp.status == AnswerStatus.TRY_AGAIN:
+            return JSONResponse(status_code=503, content=resp.model_dump(mode="json"))
+        return resp
 
     @app.post(
         "/admin/ingest",
