@@ -7,14 +7,14 @@
     "top_k": 3,
     "pool": 8,
     "cases": 35,
-    "commit": "66bbe44",
-    "timestamp": "2026-11-20T13:09:53+00:00",
+    "commit": "700a9f2",
+    "timestamp": "2026-11-20T13:13:12+00:00",
     "repeats": 1
   },
   "summary": {
     "total": 35,
-    "passed": 31,
-    "pass_rate": 0.886
+    "passed": 32,
+    "pass_rate": 0.914
   },
   "by_category": {
     "asymmetric-silence": {
@@ -31,7 +31,7 @@
     },
     "distractor": {
       "total": 4,
-      "pass": 3
+      "pass": 4
     },
     "injection": {
       "total": 4,
@@ -80,17 +80,17 @@
     ],
     "leaks": 0,
     "injection_passed": "4/4",
-    "try_again": 1,
-    "connection_retries": 0,
-    "max_llm_calls": 1,
-    "total_llm_calls": 31,
+    "try_again": 0,
+    "connection_retries": 1,
+    "max_llm_calls": 2,
+    "total_llm_calls": 32,
     "max_citations": 2,
     "latency_ms": {
       "note": "in-process (retrieval + LLM), excludes HTTP; see scripts/bench.py for API",
-      "llm_cases_p50": 464,
-      "llm_cases_p95": 743,
-      "all_cases_p95": 743,
-      "max": 2752
+      "llm_cases_p50": 469,
+      "llm_cases_p95": 722,
+      "all_cases_p95": 722,
+      "max": 745
     }
   },
   "failures": {
@@ -105,10 +105,6 @@
     "nim-weekend-typo": [
       "status not_covered != expected answered",
       "missing one of ['manager']"
-    ],
-    "saf-noshow-not-wait": [
-      "status try_again != expected answered",
-      "missing one of ['3', 'third', 'three']"
     ]
   }
 }
