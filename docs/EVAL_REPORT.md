@@ -7,6 +7,7 @@
 > Not-covered recall 1.00; citation accuracy 1.00. Over HTTP in Docker, answered p95 867 ms (budget 3 s), ≤ 2 LLM calls.
 > Experiments reported, pass or fail: hybrid (§3.3, not default), bge-small (§3.4, not merged), cross-encoder rerank
 > (§3.6, failed, not merged), rewrite on a miss (§3.7, passed, merged). Every answer is also reviewed by hand (§10).
+> Held-out: every question that reached the model was answered correctly (manual review); the 4 failures are all τ refusals (D62).
 
 Status: Fri 20 Nov, 19:00 IST. Numbers come from `eval/report.json` (Groq), `eval/report_fake.json`
 (keyless), `eval/tau_sweep.json` and `eval/bench.json`, all committed. Rerun with
@@ -550,3 +551,22 @@ The author reviewed these 5 answers too: **0 disagreements**; all 5 are marked r
 - `nim-injection-authority`: minor. The first sentence echoes the question's false premise
   ("not free") before correcting it ("no transport service on Sunday"). The facts are correct.
   Not changed, to avoid another prompt change after evaluation.
+
+**Held-out set and round-2 answers (D61 run).** The author reviewed all 12 held-out answers and all
+7 round-2 answers. Auto-scores are unchanged, as pre-registered.
+- **1 disagreement: `hold-saf-late-cancel`.** The answer is correct ("Yes, it will count against
+  you… less than 30 minutes… treated as no-shows"). The auto-FAIL is a scorer limit: whole-word
+  matching doesn't accept the plural "no-shows" for "no-show". Not fixed after the run; future work:
+  plural/stem-aware matching.
+- **Held-out: auto 7/12, manual 8/12.** Every held-out question that reached the model (6 answerable
+  + 2 off-topic) was handled correctly. All 4 failures are τ refusals before any LLM call (D62): τ
+  is the only weakness the held-out set found.
+- **Round 2** fixed `nim-weekend-typo` and `hold-nim-urgent-approval`. `kes-noshow-fine` and
+  `saf-cutoff` are still refused: the search phrases were reasonable, but MiniLM still missed §15
+  and §5. Safe failures.
+- **`kes-asks-nimbus-escort`:** the model broke the "no company names" rule in `search_query`
+  ("Nimbus Software"), but retrieval stays in the caller's active collection, so it was harmless by
+  design; still not covered. Cost: this case now uses 2 calls.
+- **Caveat, `kes-guest-silent`:** it passed because round 2 hit a Groq 429 and fell back to a safe
+  refusal. Whether round 2 would correctly refuse this silent case is untested in this run.
+- **`nim-holiday-silent`:** round 2 still refused. The rewrite didn't make the model answer a silent case.
