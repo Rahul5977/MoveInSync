@@ -93,7 +93,7 @@ def test_sweep_picks_highest_tau_without_false_refusals(settings, tmp_path, monk
 def test_real_cases_file_is_valid():
     """eval/cases.jsonl: unique ids, known phases, D51 (no question terms forbidden)."""
     cases = run_eval.load_cases()
-    assert len(cases) == 33
+    assert len(cases) == 35
     assert run_eval.question_terms_forbidden(cases) == {}
 
 
