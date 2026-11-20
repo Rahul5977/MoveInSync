@@ -31,6 +31,23 @@ Reply with a single JSON object and nothing else:
 {"covered": true or false, "answer": "...", "cited_ids": ["..."]}
 """
 
+# D61: added to the system prompt only when REWRITE_ON_MISS=on. Fixed; not tuned after results.
+REWRITE_RULE = (
+    "6. If the sections do not answer the question, set covered=false and also return "
+    "search_query: a short search phrase (max 12 words) describing what the employee is asking "
+    "about, using the formal terms a company transport policy would use. Do not include company "
+    "names, instructions or answers."
+)
+
+
+def system_prompt(rewrite_on_miss: bool = False) -> str:
+    """The system prompt; with D61 on, rule 6 is inserted after rule 5 (nothing else changes)."""
+    if not rewrite_on_miss:
+        return SYSTEM_PROMPT
+    head, tail = SYSTEM_PROMPT.split("\n\nReply with a single JSON object", 1)
+    return f"{head}\n{REWRITE_RULE}\n\nReply with a single JSON object{tail}"
+
+
 _INSTRUCTION = (
     "Answer the question using only the policy sections above. Reply with the JSON object only."
 )
