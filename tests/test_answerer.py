@@ -469,3 +469,13 @@ def test_provider_json_validation_failure_triggers_repair(settings, token_for):
     with app_with(settings, FakeLLM(responder)) as client:
         body = ask(client, "nimbus", ESCORT_Q, token_for).json()
     assert body["status"] == "answered" and body["meta"]["llm_calls"] == 2
+
+
+def test_not_covered_wording_is_exact(settings, token_for):
+    with app_with(settings, FakeLLM([]), retrieval_min_score=1.01) as client:
+        body = ask(client, "nimbus", "Can I bring my pet in the cab?", token_for).json()
+    assert body["answer"] == (
+        "Your company's transport policy doesn't cover this. "
+        "I can only answer from your own company's current policy. "
+        "Please contact the transport desk."
+    )

@@ -37,8 +37,9 @@ from app.store.vector import VectorStore
 log = logging.getLogger(__name__)
 
 NOT_COVERED_MSG = (
-    "Your company's transport policy does not cover this. "
-    "Please contact the transport desk for help."
+    "Your company's transport policy doesn't cover this. "
+    "I can only answer from your own company's current policy. "
+    "Please contact the transport desk."
 )
 TRY_AGAIN_MSG = (
     "We couldn't get an answer right now. Please try again in a moment, "
