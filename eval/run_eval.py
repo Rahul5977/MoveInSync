@@ -48,11 +48,17 @@ RATE_LIMIT_RETRIES, RATE_LIMIT_WAIT_S = 3, 15.0
 # ---------------------------------------------------------------- setup
 
 
-def load_cases(path: Path = CASES) -> list[dict]:
-    rows = [json.loads(line) for line in path.read_text().splitlines() if line.strip()]
+def load_cases(*paths: Path) -> list[dict]:
+    """Cases from one or more JSONL files (default: eval/cases.jsonl), in order."""
+    rows = [
+        json.loads(line)
+        for path in (paths or (CASES,))
+        for line in path.read_text().splitlines()
+        if line.strip()
+    ]
     ids = [r["id"] for r in rows]
     if len(ids) != len(set(ids)):
-        sys.exit("Duplicate case ids in cases.jsonl")
+        sys.exit("Duplicate case ids across the case files")
     bad = [r["id"] for r in rows if r["input"]["phase"] not in PHASES]
     if bad:
         sys.exit(f"Unknown phase in cases: {bad}")
@@ -78,9 +84,9 @@ def choose_provider(requested: str, settings: Settings) -> str:
     return "groq" if settings.groq_api_key else "fake"
 
 
-def output_paths(provider: str, mode: str = "vector") -> tuple[Path, Path]:
+def output_paths(provider: str, mode: str = "vector", out_suffix: str = "") -> tuple[Path, Path]:
     """Only groq + vector writes the submission file; other modes get a suffix, never overwrite."""
-    suffix = "" if mode == "vector" else f"_{mode}"
+    suffix = ("" if mode == "vector" else f"_{mode}") + out_suffix
     if provider == "groq":
         return EVAL_DIR / f"results{suffix}.jsonl", EVAL_DIR / f"report{suffix}.json"
     return EVAL_DIR / f"results_fake{suffix}.jsonl", EVAL_DIR / f"report_fake{suffix}.json"
@@ -216,12 +222,21 @@ def expected_rank(case: dict, chunks) -> int | None:
     return None
 
 
-def run_ranks(settings: Settings, cases: list[dict], out_name: str | None = None):
-    """Where does the expected section land in the retrieval pool? hit@3 (sent), @5, @8 (pool).
-    Also flags answerable cases whose section is in the top 3 but tau (vector score) refuses."""
+def is_holdout(case: dict) -> bool:
+    return "category: holdout" in case.get("notes", "")
+
+
+def run_ranks(
+    settings: Settings, cases: list[dict], out_name: str | None = None, out_suffix: str = ""
+):
+    """Where does the expected section land in the retrieval pool? hit@1, @3 (sent), @5, @8 (pool).
+    Also flags answerable cases whose section is in the top 3 but tau (vector score) refuses.
+    With held-out cases present, hits are also reported per set (cases / holdout)."""
     mode = settings.retrieval_mode
     out_name = out_name or (
-        "retrieval_ranks.json" if mode == "vector" else f"retrieval_ranks_{mode}.json"
+        f"retrieval_ranks{out_suffix}.json"
+        if mode == "vector"
+        else f"retrieval_ranks_{mode}{out_suffix}.json"
     )
     env = Env(settings)
     ranks: dict[str, int | None] = {}
@@ -248,10 +263,22 @@ def run_ranks(settings: Settings, cases: list[dict], out_name: str | None = None
     finally:
         env.close()
     n = len(ranks)
-    hits = {
-        f"hit@{k}": ratio(sum(r is not None and r <= k for r in ranks.values()), n)
-        for k in (3, 5, settings.retrieval_pool)
-    }
+
+    def hit_rates(ids: list[str]) -> dict[str, float]:
+        return {
+            f"hit@{k}": ratio(sum(ranks[i] is not None and ranks[i] <= k for i in ids), len(ids))
+            for k in (1, 3, 5, settings.retrieval_pool)
+        }
+
+    hits = hit_rates(list(ranks))
+    holdout_ids = {c["id"] for c in cases if is_holdout(c)}
+    by_set = {}
+    if holdout_ids:
+        for name, ids in (
+            ("cases", [i for i in ranks if i not in holdout_ids]),
+            ("holdout", [i for i in ranks if i in holdout_ids]),
+        ):
+            by_set[name] = {"answerable": len(ids), **hit_rates(ids)}
     tau = settings.retrieval_min_score
     found_but_tau = sorted(
         cid
@@ -263,6 +290,7 @@ def run_ranks(settings: Settings, cases: list[dict], out_name: str | None = None
         "pool": settings.retrieval_pool,
         "answerable": n,
         **hits,
+        **({"by_set": by_set} if by_set else {}),
         "found_in_top3_but_tau_refuses": found_but_tau,
         "ranks": ranks,
         "best_vector_score": {k: v and round(v, 4) for k, v in best_vector.items()},
@@ -271,6 +299,8 @@ def run_ranks(settings: Settings, cases: list[dict], out_name: str | None = None
         if r is None or r > settings.retrieval_top_k:
             print(f"  {cid:<34} rank {r if r else f'> {settings.retrieval_pool} (not in pool)'}")
     print("  " + " | ".join(f"{k} {v}" for k, v in hits.items()) + f"  (n={n})")
+    for name, h in by_set.items():
+        print(f"  {name}: " + " | ".join(f"{k} {v}" for k, v in h.items()))
     print(f"  found in top 3 but tau ({tau}) refuses: {found_but_tau or 'none'}")
     (EVAL_DIR / out_name).write_text(json.dumps(out, indent=2) + "\n")
     return out
@@ -424,6 +454,10 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--sweep", action="store_true", help="tau sweep, retrieval only (no LLM)")
     ap.add_argument("--ranks", action="store_true", help="expected-section rank in the pool")
     ap.add_argument("--retrieval", choices=["vector", "hybrid"], help="override RETRIEVAL_MODE")
+    ap.add_argument(
+        "--cases", type=Path, action="append", help="case file (repeatable; default cases.jsonl)"
+    )
+    ap.add_argument("--out-suffix", default="", help="suffix for output files, e.g. _holdout")
     ap.add_argument("--tau", type=float, help="override RETRIEVAL_MIN_SCORE for this run")
     ap.add_argument("--repeat", type=int, default=1, help="run N times and report flips")
     ap.add_argument("--throttle", type=float, help="seconds between LLM cases (groq default 2.5)")
@@ -434,7 +468,7 @@ def main(argv: list[str] | None = None) -> int:
         settings = settings.model_copy(update={"retrieval_min_score": args.tau})
     if args.retrieval:
         settings = settings.model_copy(update={"retrieval_mode": args.retrieval})
-    cases = load_cases()
+    cases = load_cases(*(args.cases or []))
 
     if args.ranks:
         banner(
@@ -443,7 +477,7 @@ def main(argv: list[str] | None = None) -> int:
                 f" | pool {settings.retrieval_pool}"
             ]
         )
-        run_ranks(settings, cases)
+        run_ranks(settings, cases, out_suffix=args.out_suffix)
         return 0
     if args.sweep:
         banner([f"TAU SWEEP (retrieval only, no LLM) - {len(cases)} cases"])
@@ -456,7 +490,9 @@ def main(argv: list[str] | None = None) -> int:
     settings = settings.model_copy(update={"llm_provider": provider})
     llm = make_llm(settings)
     throttle = args.throttle if args.throttle is not None else (2.5 if provider == "groq" else 0.0)
-    results_path, report_path = output_paths(provider, settings.retrieval_mode)
+    if args.cases and not args.out_suffix:
+        sys.exit("--cases needs --out-suffix, so the committed results files are never overwritten")
+    results_path, report_path = output_paths(provider, settings.retrieval_mode, args.out_suffix)
 
     banner(
         [
