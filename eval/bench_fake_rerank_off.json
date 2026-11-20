@@ -1,0 +1,39 @@
+{
+  "timestamp": "2026-11-20T18:51:59+00:00",
+  "base": "http://localhost:8000",
+  "health": {
+    "status": "ok",
+    "llm": {
+      "provider": "fake",
+      "ready": true
+    }
+  },
+  "n": 60,
+  "throttle_s": 0.2,
+  "warmup_requests": 3,
+  "label": "rerank off fake",
+  "client_ms": {
+    "p50": 118,
+    "p95": 152,
+    "max": 170
+  },
+  "server_ms": {
+    "p50": 112,
+    "p95": 148
+  },
+  "statuses": {
+    "answered": 60
+  },
+  "client_ms_by_status": {
+    "answered": {
+      "n": 60,
+      "p50": 118,
+      "p95": 152,
+      "max": 170
+    }
+  },
+  "llm_calls_histogram": {
+    "1": 60
+  },
+  "under_3s_p95": true
+}
