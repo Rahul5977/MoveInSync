@@ -1,0 +1,1830 @@
+{
+  "chosen_tau": 0.62,
+  "rule": "highest tau with zero false refusals of answerable cases",
+  "caveat": "tuned on the same set it is scored on (no held-out set)",
+  "best_scores": {
+    "saf-holiday-silent": 0.6101662516593933,
+    "kes-wifi": 0.6203020215034485,
+    "saf-children": 0.6216660737991333,
+    "nim-weekend-typo": 0.6252260208129883,
+    "kes-noshow-fine": 0.6424716114997864,
+    "nim-saffron-cap-trap": 0.6436848640441895,
+    "saf-noshow-not-wait": 0.6628373265266418,
+    "nim-nightdrop-not-escort": 0.663337230682373,
+    "nim-pets": 0.6640753149986267,
+    "nim-holiday-silent": 0.6769253611564636,
+    "kes-asks-nimbus-escort": 0.6787666082382202,
+    "kes-injection-question": 0.679580807685852,
+    "kes-holiday-answered": 0.6805022954940796,
+    "kes-saturday-no": 0.6874800324440002,
+    "nim-injection-authority": 0.6906505227088928,
+    "kes-guest-silent": 0.7001107335090637,
+    "saf-injection-roleplay": 0.7017202377319336,
+    "saf-cutoff": 0.7020146250724792,
+    "saf-external-guest-no": 0.703139066696167,
+    "kes-cancel-paraphrase": 0.7064350843429565,
+    "nim-escort-10pm-trap": 0.7147783637046814,
+    "nim-noshow-twice": 0.7252888083457947,
+    "nim-eligibility-distance": 0.7497994303703308,
+    "kes-airport-vehicle-not-approval": 0.7598280906677246,
+    "saf-escort": 0.776827871799469,
+    "kes-wait-informal": 0.7787922620773315,
+    "nim-escort-745-v1": 0.7894887924194336,
+    "nim-escort-745-v2": 0.7901560664176941,
+    "nim-guest-answered": 0.7913169264793396,
+    "saf-adhoc-approval-and-cap": 0.8065783381462097,
+    "nim-adhoc-cap-not-approval": 0.8130029439926147,
+    "kes-airport-approval": 0.8256670832633972,
+    "saf-injection-doc": 0.8295592665672302,
+    "nim-cutoff-v2": 0.8337647914886475,
+    "nim-cutoff-v1": 0.8341200351715088
+  },
+  "lowest_answerable": {
+    "id": "nim-weekend-typo",
+    "score": 0.6252260208129883
+  },
+  "sweep": [
+    {
+      "tau": 0.0,
+      "false_refusals": [],
+      "not_covered_caught": [],
+      "universal_caught": []
+    },
+    {
+      "tau": 0.01,
+      "false_refusals": [],
+      "not_covered_caught": [],
+      "universal_caught": []
+    },
+    {
+      "tau": 0.02,
+      "false_refusals": [],
+      "not_covered_caught": [],
+      "universal_caught": []
+    },
+    {
+      "tau": 0.03,
+      "false_refusals": [],
+      "not_covered_caught": [],
+      "universal_caught": []
+    },
+    {
+      "tau": 0.04,
+      "false_refusals": [],
+      "not_covered_caught": [],
+      "universal_caught": []
+    },
+    {
+      "tau": 0.05,
+      "false_refusals": [],
+      "not_covered_caught": [],
+      "universal_caught": []
+    },
+    {
+      "tau": 0.06,
+      "false_refusals": [],
+      "not_covered_caught": [],
+      "universal_caught": []
+    },
+    {
+      "tau": 0.07,
+      "false_refusals": [],
+      "not_covered_caught": [],
+      "universal_caught": []
+    },
+    {
+      "tau": 0.08,
+      "false_refusals": [],
+      "not_covered_caught": [],
+      "universal_caught": []
+    },
+    {
+      "tau": 0.09,
+      "false_refusals": [],
+      "not_covered_caught": [],
+      "universal_caught": []
+    },
+    {
+      "tau": 0.1,
+      "false_refusals": [],
+      "not_covered_caught": [],
+      "universal_caught": []
+    },
+    {
+      "tau": 0.11,
+      "false_refusals": [],
+      "not_covered_caught": [],
+      "universal_caught": []
+    },
+    {
+      "tau": 0.12,
+      "false_refusals": [],
+      "not_covered_caught": [],
+      "universal_caught": []
+    },
+    {
+      "tau": 0.13,
+      "false_refusals": [],
+      "not_covered_caught": [],
+      "universal_caught": []
+    },
+    {
+      "tau": 0.14,
+      "false_refusals": [],
+      "not_covered_caught": [],
+      "universal_caught": []
+    },
+    {
+      "tau": 0.15,
+      "false_refusals": [],
+      "not_covered_caught": [],
+      "universal_caught": []
+    },
+    {
+      "tau": 0.16,
+      "false_refusals": [],
+      "not_covered_caught": [],
+      "universal_caught": []
+    },
+    {
+      "tau": 0.17,
+      "false_refusals": [],
+      "not_covered_caught": [],
+      "universal_caught": []
+    },
+    {
+      "tau": 0.18,
+      "false_refusals": [],
+      "not_covered_caught": [],
+      "universal_caught": []
+    },
+    {
+      "tau": 0.19,
+      "false_refusals": [],
+      "not_covered_caught": [],
+      "universal_caught": []
+    },
+    {
+      "tau": 0.2,
+      "false_refusals": [],
+      "not_covered_caught": [],
+      "universal_caught": []
+    },
+    {
+      "tau": 0.21,
+      "false_refusals": [],
+      "not_covered_caught": [],
+      "universal_caught": []
+    },
+    {
+      "tau": 0.22,
+      "false_refusals": [],
+      "not_covered_caught": [],
+      "universal_caught": []
+    },
+    {
+      "tau": 0.23,
+      "false_refusals": [],
+      "not_covered_caught": [],
+      "universal_caught": []
+    },
+    {
+      "tau": 0.24,
+      "false_refusals": [],
+      "not_covered_caught": [],
+      "universal_caught": []
+    },
+    {
+      "tau": 0.25,
+      "false_refusals": [],
+      "not_covered_caught": [],
+      "universal_caught": []
+    },
+    {
+      "tau": 0.26,
+      "false_refusals": [],
+      "not_covered_caught": [],
+      "universal_caught": []
+    },
+    {
+      "tau": 0.27,
+      "false_refusals": [],
+      "not_covered_caught": [],
+      "universal_caught": []
+    },
+    {
+      "tau": 0.28,
+      "false_refusals": [],
+      "not_covered_caught": [],
+      "universal_caught": []
+    },
+    {
+      "tau": 0.29,
+      "false_refusals": [],
+      "not_covered_caught": [],
+      "universal_caught": []
+    },
+    {
+      "tau": 0.3,
+      "false_refusals": [],
+      "not_covered_caught": [],
+      "universal_caught": []
+    },
+    {
+      "tau": 0.31,
+      "false_refusals": [],
+      "not_covered_caught": [],
+      "universal_caught": []
+    },
+    {
+      "tau": 0.32,
+      "false_refusals": [],
+      "not_covered_caught": [],
+      "universal_caught": []
+    },
+    {
+      "tau": 0.33,
+      "false_refusals": [],
+      "not_covered_caught": [],
+      "universal_caught": []
+    },
+    {
+      "tau": 0.34,
+      "false_refusals": [],
+      "not_covered_caught": [],
+      "universal_caught": []
+    },
+    {
+      "tau": 0.35,
+      "false_refusals": [],
+      "not_covered_caught": [],
+      "universal_caught": []
+    },
+    {
+      "tau": 0.36,
+      "false_refusals": [],
+      "not_covered_caught": [],
+      "universal_caught": []
+    },
+    {
+      "tau": 0.37,
+      "false_refusals": [],
+      "not_covered_caught": [],
+      "universal_caught": []
+    },
+    {
+      "tau": 0.38,
+      "false_refusals": [],
+      "not_covered_caught": [],
+      "universal_caught": []
+    },
+    {
+      "tau": 0.39,
+      "false_refusals": [],
+      "not_covered_caught": [],
+      "universal_caught": []
+    },
+    {
+      "tau": 0.4,
+      "false_refusals": [],
+      "not_covered_caught": [],
+      "universal_caught": []
+    },
+    {
+      "tau": 0.41,
+      "false_refusals": [],
+      "not_covered_caught": [],
+      "universal_caught": []
+    },
+    {
+      "tau": 0.42,
+      "false_refusals": [],
+      "not_covered_caught": [],
+      "universal_caught": []
+    },
+    {
+      "tau": 0.43,
+      "false_refusals": [],
+      "not_covered_caught": [],
+      "universal_caught": []
+    },
+    {
+      "tau": 0.44,
+      "false_refusals": [],
+      "not_covered_caught": [],
+      "universal_caught": []
+    },
+    {
+      "tau": 0.45,
+      "false_refusals": [],
+      "not_covered_caught": [],
+      "universal_caught": []
+    },
+    {
+      "tau": 0.46,
+      "false_refusals": [],
+      "not_covered_caught": [],
+      "universal_caught": []
+    },
+    {
+      "tau": 0.47,
+      "false_refusals": [],
+      "not_covered_caught": [],
+      "universal_caught": []
+    },
+    {
+      "tau": 0.48,
+      "false_refusals": [],
+      "not_covered_caught": [],
+      "universal_caught": []
+    },
+    {
+      "tau": 0.49,
+      "false_refusals": [],
+      "not_covered_caught": [],
+      "universal_caught": []
+    },
+    {
+      "tau": 0.5,
+      "false_refusals": [],
+      "not_covered_caught": [],
+      "universal_caught": []
+    },
+    {
+      "tau": 0.51,
+      "false_refusals": [],
+      "not_covered_caught": [],
+      "universal_caught": []
+    },
+    {
+      "tau": 0.52,
+      "false_refusals": [],
+      "not_covered_caught": [],
+      "universal_caught": []
+    },
+    {
+      "tau": 0.53,
+      "false_refusals": [],
+      "not_covered_caught": [],
+      "universal_caught": []
+    },
+    {
+      "tau": 0.54,
+      "false_refusals": [],
+      "not_covered_caught": [],
+      "universal_caught": []
+    },
+    {
+      "tau": 0.55,
+      "false_refusals": [],
+      "not_covered_caught": [],
+      "universal_caught": []
+    },
+    {
+      "tau": 0.56,
+      "false_refusals": [],
+      "not_covered_caught": [],
+      "universal_caught": []
+    },
+    {
+      "tau": 0.57,
+      "false_refusals": [],
+      "not_covered_caught": [],
+      "universal_caught": []
+    },
+    {
+      "tau": 0.58,
+      "false_refusals": [],
+      "not_covered_caught": [],
+      "universal_caught": []
+    },
+    {
+      "tau": 0.59,
+      "false_refusals": [],
+      "not_covered_caught": [],
+      "universal_caught": []
+    },
+    {
+      "tau": 0.6,
+      "false_refusals": [],
+      "not_covered_caught": [],
+      "universal_caught": []
+    },
+    {
+      "tau": 0.61,
+      "false_refusals": [],
+      "not_covered_caught": [],
+      "universal_caught": []
+    },
+    {
+      "tau": 0.62,
+      "false_refusals": [],
+      "not_covered_caught": [
+        "saf-holiday-silent"
+      ],
+      "universal_caught": []
+    },
+    {
+      "tau": 0.63,
+      "false_refusals": [
+        "nim-weekend-typo"
+      ],
+      "not_covered_caught": [
+        "kes-wifi",
+        "saf-children",
+        "saf-holiday-silent"
+      ],
+      "universal_caught": [
+        "kes-wifi",
+        "saf-children"
+      ]
+    },
+    {
+      "tau": 0.64,
+      "false_refusals": [
+        "nim-weekend-typo"
+      ],
+      "not_covered_caught": [
+        "kes-wifi",
+        "saf-children",
+        "saf-holiday-silent"
+      ],
+      "universal_caught": [
+        "kes-wifi",
+        "saf-children"
+      ]
+    },
+    {
+      "tau": 0.65,
+      "false_refusals": [
+        "kes-noshow-fine",
+        "nim-saffron-cap-trap",
+        "nim-weekend-typo"
+      ],
+      "not_covered_caught": [
+        "kes-wifi",
+        "saf-children",
+        "saf-holiday-silent"
+      ],
+      "universal_caught": [
+        "kes-wifi",
+        "saf-children"
+      ]
+    },
+    {
+      "tau": 0.66,
+      "false_refusals": [
+        "kes-noshow-fine",
+        "nim-saffron-cap-trap",
+        "nim-weekend-typo"
+      ],
+      "not_covered_caught": [
+        "kes-wifi",
+        "saf-children",
+        "saf-holiday-silent"
+      ],
+      "universal_caught": [
+        "kes-wifi",
+        "saf-children"
+      ]
+    },
+    {
+      "tau": 0.67,
+      "false_refusals": [
+        "kes-noshow-fine",
+        "nim-nightdrop-not-escort",
+        "nim-saffron-cap-trap",
+        "nim-weekend-typo",
+        "saf-noshow-not-wait"
+      ],
+      "not_covered_caught": [
+        "kes-wifi",
+        "nim-pets",
+        "saf-children",
+        "saf-holiday-silent"
+      ],
+      "universal_caught": [
+        "kes-wifi",
+        "nim-pets",
+        "saf-children"
+      ]
+    },
+    {
+      "tau": 0.68,
+      "false_refusals": [
+        "kes-injection-question",
+        "kes-noshow-fine",
+        "nim-nightdrop-not-escort",
+        "nim-saffron-cap-trap",
+        "nim-weekend-typo",
+        "saf-noshow-not-wait"
+      ],
+      "not_covered_caught": [
+        "kes-asks-nimbus-escort",
+        "kes-wifi",
+        "nim-holiday-silent",
+        "nim-pets",
+        "saf-children",
+        "saf-holiday-silent"
+      ],
+      "universal_caught": [
+        "kes-wifi",
+        "nim-pets",
+        "saf-children"
+      ]
+    },
+    {
+      "tau": 0.69,
+      "false_refusals": [
+        "kes-holiday-answered",
+        "kes-injection-question",
+        "kes-noshow-fine",
+        "kes-saturday-no",
+        "nim-nightdrop-not-escort",
+        "nim-saffron-cap-trap",
+        "nim-weekend-typo",
+        "saf-noshow-not-wait"
+      ],
+      "not_covered_caught": [
+        "kes-asks-nimbus-escort",
+        "kes-wifi",
+        "nim-holiday-silent",
+        "nim-pets",
+        "saf-children",
+        "saf-holiday-silent"
+      ],
+      "universal_caught": [
+        "kes-wifi",
+        "nim-pets",
+        "saf-children"
+      ]
+    },
+    {
+      "tau": 0.7,
+      "false_refusals": [
+        "kes-holiday-answered",
+        "kes-injection-question",
+        "kes-noshow-fine",
+        "kes-saturday-no",
+        "nim-injection-authority",
+        "nim-nightdrop-not-escort",
+        "nim-saffron-cap-trap",
+        "nim-weekend-typo",
+        "saf-noshow-not-wait"
+      ],
+      "not_covered_caught": [
+        "kes-asks-nimbus-escort",
+        "kes-wifi",
+        "nim-holiday-silent",
+        "nim-pets",
+        "saf-children",
+        "saf-holiday-silent"
+      ],
+      "universal_caught": [
+        "kes-wifi",
+        "nim-pets",
+        "saf-children"
+      ]
+    },
+    {
+      "tau": 0.71,
+      "false_refusals": [
+        "kes-cancel-paraphrase",
+        "kes-holiday-answered",
+        "kes-injection-question",
+        "kes-noshow-fine",
+        "kes-saturday-no",
+        "nim-injection-authority",
+        "nim-nightdrop-not-escort",
+        "nim-saffron-cap-trap",
+        "nim-weekend-typo",
+        "saf-cutoff",
+        "saf-external-guest-no",
+        "saf-injection-roleplay",
+        "saf-noshow-not-wait"
+      ],
+      "not_covered_caught": [
+        "kes-asks-nimbus-escort",
+        "kes-guest-silent",
+        "kes-wifi",
+        "nim-holiday-silent",
+        "nim-pets",
+        "saf-children",
+        "saf-holiday-silent"
+      ],
+      "universal_caught": [
+        "kes-wifi",
+        "nim-pets",
+        "saf-children"
+      ]
+    },
+    {
+      "tau": 0.72,
+      "false_refusals": [
+        "kes-cancel-paraphrase",
+        "kes-holiday-answered",
+        "kes-injection-question",
+        "kes-noshow-fine",
+        "kes-saturday-no",
+        "nim-escort-10pm-trap",
+        "nim-injection-authority",
+        "nim-nightdrop-not-escort",
+        "nim-saffron-cap-trap",
+        "nim-weekend-typo",
+        "saf-cutoff",
+        "saf-external-guest-no",
+        "saf-injection-roleplay",
+        "saf-noshow-not-wait"
+      ],
+      "not_covered_caught": [
+        "kes-asks-nimbus-escort",
+        "kes-guest-silent",
+        "kes-wifi",
+        "nim-holiday-silent",
+        "nim-pets",
+        "saf-children",
+        "saf-holiday-silent"
+      ],
+      "universal_caught": [
+        "kes-wifi",
+        "nim-pets",
+        "saf-children"
+      ]
+    },
+    {
+      "tau": 0.73,
+      "false_refusals": [
+        "kes-cancel-paraphrase",
+        "kes-holiday-answered",
+        "kes-injection-question",
+        "kes-noshow-fine",
+        "kes-saturday-no",
+        "nim-escort-10pm-trap",
+        "nim-injection-authority",
+        "nim-nightdrop-not-escort",
+        "nim-noshow-twice",
+        "nim-saffron-cap-trap",
+        "nim-weekend-typo",
+        "saf-cutoff",
+        "saf-external-guest-no",
+        "saf-injection-roleplay",
+        "saf-noshow-not-wait"
+      ],
+      "not_covered_caught": [
+        "kes-asks-nimbus-escort",
+        "kes-guest-silent",
+        "kes-wifi",
+        "nim-holiday-silent",
+        "nim-pets",
+        "saf-children",
+        "saf-holiday-silent"
+      ],
+      "universal_caught": [
+        "kes-wifi",
+        "nim-pets",
+        "saf-children"
+      ]
+    },
+    {
+      "tau": 0.74,
+      "false_refusals": [
+        "kes-cancel-paraphrase",
+        "kes-holiday-answered",
+        "kes-injection-question",
+        "kes-noshow-fine",
+        "kes-saturday-no",
+        "nim-escort-10pm-trap",
+        "nim-injection-authority",
+        "nim-nightdrop-not-escort",
+        "nim-noshow-twice",
+        "nim-saffron-cap-trap",
+        "nim-weekend-typo",
+        "saf-cutoff",
+        "saf-external-guest-no",
+        "saf-injection-roleplay",
+        "saf-noshow-not-wait"
+      ],
+      "not_covered_caught": [
+        "kes-asks-nimbus-escort",
+        "kes-guest-silent",
+        "kes-wifi",
+        "nim-holiday-silent",
+        "nim-pets",
+        "saf-children",
+        "saf-holiday-silent"
+      ],
+      "universal_caught": [
+        "kes-wifi",
+        "nim-pets",
+        "saf-children"
+      ]
+    },
+    {
+      "tau": 0.75,
+      "false_refusals": [
+        "kes-cancel-paraphrase",
+        "kes-holiday-answered",
+        "kes-injection-question",
+        "kes-noshow-fine",
+        "kes-saturday-no",
+        "nim-eligibility-distance",
+        "nim-escort-10pm-trap",
+        "nim-injection-authority",
+        "nim-nightdrop-not-escort",
+        "nim-noshow-twice",
+        "nim-saffron-cap-trap",
+        "nim-weekend-typo",
+        "saf-cutoff",
+        "saf-external-guest-no",
+        "saf-injection-roleplay",
+        "saf-noshow-not-wait"
+      ],
+      "not_covered_caught": [
+        "kes-asks-nimbus-escort",
+        "kes-guest-silent",
+        "kes-wifi",
+        "nim-holiday-silent",
+        "nim-pets",
+        "saf-children",
+        "saf-holiday-silent"
+      ],
+      "universal_caught": [
+        "kes-wifi",
+        "nim-pets",
+        "saf-children"
+      ]
+    },
+    {
+      "tau": 0.76,
+      "false_refusals": [
+        "kes-airport-vehicle-not-approval",
+        "kes-cancel-paraphrase",
+        "kes-holiday-answered",
+        "kes-injection-question",
+        "kes-noshow-fine",
+        "kes-saturday-no",
+        "nim-eligibility-distance",
+        "nim-escort-10pm-trap",
+        "nim-injection-authority",
+        "nim-nightdrop-not-escort",
+        "nim-noshow-twice",
+        "nim-saffron-cap-trap",
+        "nim-weekend-typo",
+        "saf-cutoff",
+        "saf-external-guest-no",
+        "saf-injection-roleplay",
+        "saf-noshow-not-wait"
+      ],
+      "not_covered_caught": [
+        "kes-asks-nimbus-escort",
+        "kes-guest-silent",
+        "kes-wifi",
+        "nim-holiday-silent",
+        "nim-pets",
+        "saf-children",
+        "saf-holiday-silent"
+      ],
+      "universal_caught": [
+        "kes-wifi",
+        "nim-pets",
+        "saf-children"
+      ]
+    },
+    {
+      "tau": 0.77,
+      "false_refusals": [
+        "kes-airport-vehicle-not-approval",
+        "kes-cancel-paraphrase",
+        "kes-holiday-answered",
+        "kes-injection-question",
+        "kes-noshow-fine",
+        "kes-saturday-no",
+        "nim-eligibility-distance",
+        "nim-escort-10pm-trap",
+        "nim-injection-authority",
+        "nim-nightdrop-not-escort",
+        "nim-noshow-twice",
+        "nim-saffron-cap-trap",
+        "nim-weekend-typo",
+        "saf-cutoff",
+        "saf-external-guest-no",
+        "saf-injection-roleplay",
+        "saf-noshow-not-wait"
+      ],
+      "not_covered_caught": [
+        "kes-asks-nimbus-escort",
+        "kes-guest-silent",
+        "kes-wifi",
+        "nim-holiday-silent",
+        "nim-pets",
+        "saf-children",
+        "saf-holiday-silent"
+      ],
+      "universal_caught": [
+        "kes-wifi",
+        "nim-pets",
+        "saf-children"
+      ]
+    },
+    {
+      "tau": 0.78,
+      "false_refusals": [
+        "kes-airport-vehicle-not-approval",
+        "kes-cancel-paraphrase",
+        "kes-holiday-answered",
+        "kes-injection-question",
+        "kes-noshow-fine",
+        "kes-saturday-no",
+        "kes-wait-informal",
+        "nim-eligibility-distance",
+        "nim-escort-10pm-trap",
+        "nim-injection-authority",
+        "nim-nightdrop-not-escort",
+        "nim-noshow-twice",
+        "nim-saffron-cap-trap",
+        "nim-weekend-typo",
+        "saf-cutoff",
+        "saf-escort",
+        "saf-external-guest-no",
+        "saf-injection-roleplay",
+        "saf-noshow-not-wait"
+      ],
+      "not_covered_caught": [
+        "kes-asks-nimbus-escort",
+        "kes-guest-silent",
+        "kes-wifi",
+        "nim-holiday-silent",
+        "nim-pets",
+        "saf-children",
+        "saf-holiday-silent"
+      ],
+      "universal_caught": [
+        "kes-wifi",
+        "nim-pets",
+        "saf-children"
+      ]
+    },
+    {
+      "tau": 0.79,
+      "false_refusals": [
+        "kes-airport-vehicle-not-approval",
+        "kes-cancel-paraphrase",
+        "kes-holiday-answered",
+        "kes-injection-question",
+        "kes-noshow-fine",
+        "kes-saturday-no",
+        "kes-wait-informal",
+        "nim-eligibility-distance",
+        "nim-escort-10pm-trap",
+        "nim-escort-745-v1",
+        "nim-injection-authority",
+        "nim-nightdrop-not-escort",
+        "nim-noshow-twice",
+        "nim-saffron-cap-trap",
+        "nim-weekend-typo",
+        "saf-cutoff",
+        "saf-escort",
+        "saf-external-guest-no",
+        "saf-injection-roleplay",
+        "saf-noshow-not-wait"
+      ],
+      "not_covered_caught": [
+        "kes-asks-nimbus-escort",
+        "kes-guest-silent",
+        "kes-wifi",
+        "nim-holiday-silent",
+        "nim-pets",
+        "saf-children",
+        "saf-holiday-silent"
+      ],
+      "universal_caught": [
+        "kes-wifi",
+        "nim-pets",
+        "saf-children"
+      ]
+    },
+    {
+      "tau": 0.8,
+      "false_refusals": [
+        "kes-airport-vehicle-not-approval",
+        "kes-cancel-paraphrase",
+        "kes-holiday-answered",
+        "kes-injection-question",
+        "kes-noshow-fine",
+        "kes-saturday-no",
+        "kes-wait-informal",
+        "nim-eligibility-distance",
+        "nim-escort-10pm-trap",
+        "nim-escort-745-v1",
+        "nim-escort-745-v2",
+        "nim-guest-answered",
+        "nim-injection-authority",
+        "nim-nightdrop-not-escort",
+        "nim-noshow-twice",
+        "nim-saffron-cap-trap",
+        "nim-weekend-typo",
+        "saf-cutoff",
+        "saf-escort",
+        "saf-external-guest-no",
+        "saf-injection-roleplay",
+        "saf-noshow-not-wait"
+      ],
+      "not_covered_caught": [
+        "kes-asks-nimbus-escort",
+        "kes-guest-silent",
+        "kes-wifi",
+        "nim-holiday-silent",
+        "nim-pets",
+        "saf-children",
+        "saf-holiday-silent"
+      ],
+      "universal_caught": [
+        "kes-wifi",
+        "nim-pets",
+        "saf-children"
+      ]
+    },
+    {
+      "tau": 0.81,
+      "false_refusals": [
+        "kes-airport-vehicle-not-approval",
+        "kes-cancel-paraphrase",
+        "kes-holiday-answered",
+        "kes-injection-question",
+        "kes-noshow-fine",
+        "kes-saturday-no",
+        "kes-wait-informal",
+        "nim-eligibility-distance",
+        "nim-escort-10pm-trap",
+        "nim-escort-745-v1",
+        "nim-escort-745-v2",
+        "nim-guest-answered",
+        "nim-injection-authority",
+        "nim-nightdrop-not-escort",
+        "nim-noshow-twice",
+        "nim-saffron-cap-trap",
+        "nim-weekend-typo",
+        "saf-adhoc-approval-and-cap",
+        "saf-cutoff",
+        "saf-escort",
+        "saf-external-guest-no",
+        "saf-injection-roleplay",
+        "saf-noshow-not-wait"
+      ],
+      "not_covered_caught": [
+        "kes-asks-nimbus-escort",
+        "kes-guest-silent",
+        "kes-wifi",
+        "nim-holiday-silent",
+        "nim-pets",
+        "saf-children",
+        "saf-holiday-silent"
+      ],
+      "universal_caught": [
+        "kes-wifi",
+        "nim-pets",
+        "saf-children"
+      ]
+    },
+    {
+      "tau": 0.82,
+      "false_refusals": [
+        "kes-airport-vehicle-not-approval",
+        "kes-cancel-paraphrase",
+        "kes-holiday-answered",
+        "kes-injection-question",
+        "kes-noshow-fine",
+        "kes-saturday-no",
+        "kes-wait-informal",
+        "nim-adhoc-cap-not-approval",
+        "nim-eligibility-distance",
+        "nim-escort-10pm-trap",
+        "nim-escort-745-v1",
+        "nim-escort-745-v2",
+        "nim-guest-answered",
+        "nim-injection-authority",
+        "nim-nightdrop-not-escort",
+        "nim-noshow-twice",
+        "nim-saffron-cap-trap",
+        "nim-weekend-typo",
+        "saf-adhoc-approval-and-cap",
+        "saf-cutoff",
+        "saf-escort",
+        "saf-external-guest-no",
+        "saf-injection-roleplay",
+        "saf-noshow-not-wait"
+      ],
+      "not_covered_caught": [
+        "kes-asks-nimbus-escort",
+        "kes-guest-silent",
+        "kes-wifi",
+        "nim-holiday-silent",
+        "nim-pets",
+        "saf-children",
+        "saf-holiday-silent"
+      ],
+      "universal_caught": [
+        "kes-wifi",
+        "nim-pets",
+        "saf-children"
+      ]
+    },
+    {
+      "tau": 0.83,
+      "false_refusals": [
+        "kes-airport-approval",
+        "kes-airport-vehicle-not-approval",
+        "kes-cancel-paraphrase",
+        "kes-holiday-answered",
+        "kes-injection-question",
+        "kes-noshow-fine",
+        "kes-saturday-no",
+        "kes-wait-informal",
+        "nim-adhoc-cap-not-approval",
+        "nim-eligibility-distance",
+        "nim-escort-10pm-trap",
+        "nim-escort-745-v1",
+        "nim-escort-745-v2",
+        "nim-guest-answered",
+        "nim-injection-authority",
+        "nim-nightdrop-not-escort",
+        "nim-noshow-twice",
+        "nim-saffron-cap-trap",
+        "nim-weekend-typo",
+        "saf-adhoc-approval-and-cap",
+        "saf-cutoff",
+        "saf-escort",
+        "saf-external-guest-no",
+        "saf-injection-doc",
+        "saf-injection-roleplay",
+        "saf-noshow-not-wait"
+      ],
+      "not_covered_caught": [
+        "kes-asks-nimbus-escort",
+        "kes-guest-silent",
+        "kes-wifi",
+        "nim-holiday-silent",
+        "nim-pets",
+        "saf-children",
+        "saf-holiday-silent"
+      ],
+      "universal_caught": [
+        "kes-wifi",
+        "nim-pets",
+        "saf-children"
+      ]
+    },
+    {
+      "tau": 0.84,
+      "false_refusals": [
+        "kes-airport-approval",
+        "kes-airport-vehicle-not-approval",
+        "kes-cancel-paraphrase",
+        "kes-holiday-answered",
+        "kes-injection-question",
+        "kes-noshow-fine",
+        "kes-saturday-no",
+        "kes-wait-informal",
+        "nim-adhoc-cap-not-approval",
+        "nim-cutoff-v1",
+        "nim-cutoff-v2",
+        "nim-eligibility-distance",
+        "nim-escort-10pm-trap",
+        "nim-escort-745-v1",
+        "nim-escort-745-v2",
+        "nim-guest-answered",
+        "nim-injection-authority",
+        "nim-nightdrop-not-escort",
+        "nim-noshow-twice",
+        "nim-saffron-cap-trap",
+        "nim-weekend-typo",
+        "saf-adhoc-approval-and-cap",
+        "saf-cutoff",
+        "saf-escort",
+        "saf-external-guest-no",
+        "saf-injection-doc",
+        "saf-injection-roleplay",
+        "saf-noshow-not-wait"
+      ],
+      "not_covered_caught": [
+        "kes-asks-nimbus-escort",
+        "kes-guest-silent",
+        "kes-wifi",
+        "nim-holiday-silent",
+        "nim-pets",
+        "saf-children",
+        "saf-holiday-silent"
+      ],
+      "universal_caught": [
+        "kes-wifi",
+        "nim-pets",
+        "saf-children"
+      ]
+    },
+    {
+      "tau": 0.85,
+      "false_refusals": [
+        "kes-airport-approval",
+        "kes-airport-vehicle-not-approval",
+        "kes-cancel-paraphrase",
+        "kes-holiday-answered",
+        "kes-injection-question",
+        "kes-noshow-fine",
+        "kes-saturday-no",
+        "kes-wait-informal",
+        "nim-adhoc-cap-not-approval",
+        "nim-cutoff-v1",
+        "nim-cutoff-v2",
+        "nim-eligibility-distance",
+        "nim-escort-10pm-trap",
+        "nim-escort-745-v1",
+        "nim-escort-745-v2",
+        "nim-guest-answered",
+        "nim-injection-authority",
+        "nim-nightdrop-not-escort",
+        "nim-noshow-twice",
+        "nim-saffron-cap-trap",
+        "nim-weekend-typo",
+        "saf-adhoc-approval-and-cap",
+        "saf-cutoff",
+        "saf-escort",
+        "saf-external-guest-no",
+        "saf-injection-doc",
+        "saf-injection-roleplay",
+        "saf-noshow-not-wait"
+      ],
+      "not_covered_caught": [
+        "kes-asks-nimbus-escort",
+        "kes-guest-silent",
+        "kes-wifi",
+        "nim-holiday-silent",
+        "nim-pets",
+        "saf-children",
+        "saf-holiday-silent"
+      ],
+      "universal_caught": [
+        "kes-wifi",
+        "nim-pets",
+        "saf-children"
+      ]
+    },
+    {
+      "tau": 0.86,
+      "false_refusals": [
+        "kes-airport-approval",
+        "kes-airport-vehicle-not-approval",
+        "kes-cancel-paraphrase",
+        "kes-holiday-answered",
+        "kes-injection-question",
+        "kes-noshow-fine",
+        "kes-saturday-no",
+        "kes-wait-informal",
+        "nim-adhoc-cap-not-approval",
+        "nim-cutoff-v1",
+        "nim-cutoff-v2",
+        "nim-eligibility-distance",
+        "nim-escort-10pm-trap",
+        "nim-escort-745-v1",
+        "nim-escort-745-v2",
+        "nim-guest-answered",
+        "nim-injection-authority",
+        "nim-nightdrop-not-escort",
+        "nim-noshow-twice",
+        "nim-saffron-cap-trap",
+        "nim-weekend-typo",
+        "saf-adhoc-approval-and-cap",
+        "saf-cutoff",
+        "saf-escort",
+        "saf-external-guest-no",
+        "saf-injection-doc",
+        "saf-injection-roleplay",
+        "saf-noshow-not-wait"
+      ],
+      "not_covered_caught": [
+        "kes-asks-nimbus-escort",
+        "kes-guest-silent",
+        "kes-wifi",
+        "nim-holiday-silent",
+        "nim-pets",
+        "saf-children",
+        "saf-holiday-silent"
+      ],
+      "universal_caught": [
+        "kes-wifi",
+        "nim-pets",
+        "saf-children"
+      ]
+    },
+    {
+      "tau": 0.87,
+      "false_refusals": [
+        "kes-airport-approval",
+        "kes-airport-vehicle-not-approval",
+        "kes-cancel-paraphrase",
+        "kes-holiday-answered",
+        "kes-injection-question",
+        "kes-noshow-fine",
+        "kes-saturday-no",
+        "kes-wait-informal",
+        "nim-adhoc-cap-not-approval",
+        "nim-cutoff-v1",
+        "nim-cutoff-v2",
+        "nim-eligibility-distance",
+        "nim-escort-10pm-trap",
+        "nim-escort-745-v1",
+        "nim-escort-745-v2",
+        "nim-guest-answered",
+        "nim-injection-authority",
+        "nim-nightdrop-not-escort",
+        "nim-noshow-twice",
+        "nim-saffron-cap-trap",
+        "nim-weekend-typo",
+        "saf-adhoc-approval-and-cap",
+        "saf-cutoff",
+        "saf-escort",
+        "saf-external-guest-no",
+        "saf-injection-doc",
+        "saf-injection-roleplay",
+        "saf-noshow-not-wait"
+      ],
+      "not_covered_caught": [
+        "kes-asks-nimbus-escort",
+        "kes-guest-silent",
+        "kes-wifi",
+        "nim-holiday-silent",
+        "nim-pets",
+        "saf-children",
+        "saf-holiday-silent"
+      ],
+      "universal_caught": [
+        "kes-wifi",
+        "nim-pets",
+        "saf-children"
+      ]
+    },
+    {
+      "tau": 0.88,
+      "false_refusals": [
+        "kes-airport-approval",
+        "kes-airport-vehicle-not-approval",
+        "kes-cancel-paraphrase",
+        "kes-holiday-answered",
+        "kes-injection-question",
+        "kes-noshow-fine",
+        "kes-saturday-no",
+        "kes-wait-informal",
+        "nim-adhoc-cap-not-approval",
+        "nim-cutoff-v1",
+        "nim-cutoff-v2",
+        "nim-eligibility-distance",
+        "nim-escort-10pm-trap",
+        "nim-escort-745-v1",
+        "nim-escort-745-v2",
+        "nim-guest-answered",
+        "nim-injection-authority",
+        "nim-nightdrop-not-escort",
+        "nim-noshow-twice",
+        "nim-saffron-cap-trap",
+        "nim-weekend-typo",
+        "saf-adhoc-approval-and-cap",
+        "saf-cutoff",
+        "saf-escort",
+        "saf-external-guest-no",
+        "saf-injection-doc",
+        "saf-injection-roleplay",
+        "saf-noshow-not-wait"
+      ],
+      "not_covered_caught": [
+        "kes-asks-nimbus-escort",
+        "kes-guest-silent",
+        "kes-wifi",
+        "nim-holiday-silent",
+        "nim-pets",
+        "saf-children",
+        "saf-holiday-silent"
+      ],
+      "universal_caught": [
+        "kes-wifi",
+        "nim-pets",
+        "saf-children"
+      ]
+    },
+    {
+      "tau": 0.89,
+      "false_refusals": [
+        "kes-airport-approval",
+        "kes-airport-vehicle-not-approval",
+        "kes-cancel-paraphrase",
+        "kes-holiday-answered",
+        "kes-injection-question",
+        "kes-noshow-fine",
+        "kes-saturday-no",
+        "kes-wait-informal",
+        "nim-adhoc-cap-not-approval",
+        "nim-cutoff-v1",
+        "nim-cutoff-v2",
+        "nim-eligibility-distance",
+        "nim-escort-10pm-trap",
+        "nim-escort-745-v1",
+        "nim-escort-745-v2",
+        "nim-guest-answered",
+        "nim-injection-authority",
+        "nim-nightdrop-not-escort",
+        "nim-noshow-twice",
+        "nim-saffron-cap-trap",
+        "nim-weekend-typo",
+        "saf-adhoc-approval-and-cap",
+        "saf-cutoff",
+        "saf-escort",
+        "saf-external-guest-no",
+        "saf-injection-doc",
+        "saf-injection-roleplay",
+        "saf-noshow-not-wait"
+      ],
+      "not_covered_caught": [
+        "kes-asks-nimbus-escort",
+        "kes-guest-silent",
+        "kes-wifi",
+        "nim-holiday-silent",
+        "nim-pets",
+        "saf-children",
+        "saf-holiday-silent"
+      ],
+      "universal_caught": [
+        "kes-wifi",
+        "nim-pets",
+        "saf-children"
+      ]
+    },
+    {
+      "tau": 0.9,
+      "false_refusals": [
+        "kes-airport-approval",
+        "kes-airport-vehicle-not-approval",
+        "kes-cancel-paraphrase",
+        "kes-holiday-answered",
+        "kes-injection-question",
+        "kes-noshow-fine",
+        "kes-saturday-no",
+        "kes-wait-informal",
+        "nim-adhoc-cap-not-approval",
+        "nim-cutoff-v1",
+        "nim-cutoff-v2",
+        "nim-eligibility-distance",
+        "nim-escort-10pm-trap",
+        "nim-escort-745-v1",
+        "nim-escort-745-v2",
+        "nim-guest-answered",
+        "nim-injection-authority",
+        "nim-nightdrop-not-escort",
+        "nim-noshow-twice",
+        "nim-saffron-cap-trap",
+        "nim-weekend-typo",
+        "saf-adhoc-approval-and-cap",
+        "saf-cutoff",
+        "saf-escort",
+        "saf-external-guest-no",
+        "saf-injection-doc",
+        "saf-injection-roleplay",
+        "saf-noshow-not-wait"
+      ],
+      "not_covered_caught": [
+        "kes-asks-nimbus-escort",
+        "kes-guest-silent",
+        "kes-wifi",
+        "nim-holiday-silent",
+        "nim-pets",
+        "saf-children",
+        "saf-holiday-silent"
+      ],
+      "universal_caught": [
+        "kes-wifi",
+        "nim-pets",
+        "saf-children"
+      ]
+    },
+    {
+      "tau": 0.91,
+      "false_refusals": [
+        "kes-airport-approval",
+        "kes-airport-vehicle-not-approval",
+        "kes-cancel-paraphrase",
+        "kes-holiday-answered",
+        "kes-injection-question",
+        "kes-noshow-fine",
+        "kes-saturday-no",
+        "kes-wait-informal",
+        "nim-adhoc-cap-not-approval",
+        "nim-cutoff-v1",
+        "nim-cutoff-v2",
+        "nim-eligibility-distance",
+        "nim-escort-10pm-trap",
+        "nim-escort-745-v1",
+        "nim-escort-745-v2",
+        "nim-guest-answered",
+        "nim-injection-authority",
+        "nim-nightdrop-not-escort",
+        "nim-noshow-twice",
+        "nim-saffron-cap-trap",
+        "nim-weekend-typo",
+        "saf-adhoc-approval-and-cap",
+        "saf-cutoff",
+        "saf-escort",
+        "saf-external-guest-no",
+        "saf-injection-doc",
+        "saf-injection-roleplay",
+        "saf-noshow-not-wait"
+      ],
+      "not_covered_caught": [
+        "kes-asks-nimbus-escort",
+        "kes-guest-silent",
+        "kes-wifi",
+        "nim-holiday-silent",
+        "nim-pets",
+        "saf-children",
+        "saf-holiday-silent"
+      ],
+      "universal_caught": [
+        "kes-wifi",
+        "nim-pets",
+        "saf-children"
+      ]
+    },
+    {
+      "tau": 0.92,
+      "false_refusals": [
+        "kes-airport-approval",
+        "kes-airport-vehicle-not-approval",
+        "kes-cancel-paraphrase",
+        "kes-holiday-answered",
+        "kes-injection-question",
+        "kes-noshow-fine",
+        "kes-saturday-no",
+        "kes-wait-informal",
+        "nim-adhoc-cap-not-approval",
+        "nim-cutoff-v1",
+        "nim-cutoff-v2",
+        "nim-eligibility-distance",
+        "nim-escort-10pm-trap",
+        "nim-escort-745-v1",
+        "nim-escort-745-v2",
+        "nim-guest-answered",
+        "nim-injection-authority",
+        "nim-nightdrop-not-escort",
+        "nim-noshow-twice",
+        "nim-saffron-cap-trap",
+        "nim-weekend-typo",
+        "saf-adhoc-approval-and-cap",
+        "saf-cutoff",
+        "saf-escort",
+        "saf-external-guest-no",
+        "saf-injection-doc",
+        "saf-injection-roleplay",
+        "saf-noshow-not-wait"
+      ],
+      "not_covered_caught": [
+        "kes-asks-nimbus-escort",
+        "kes-guest-silent",
+        "kes-wifi",
+        "nim-holiday-silent",
+        "nim-pets",
+        "saf-children",
+        "saf-holiday-silent"
+      ],
+      "universal_caught": [
+        "kes-wifi",
+        "nim-pets",
+        "saf-children"
+      ]
+    },
+    {
+      "tau": 0.93,
+      "false_refusals": [
+        "kes-airport-approval",
+        "kes-airport-vehicle-not-approval",
+        "kes-cancel-paraphrase",
+        "kes-holiday-answered",
+        "kes-injection-question",
+        "kes-noshow-fine",
+        "kes-saturday-no",
+        "kes-wait-informal",
+        "nim-adhoc-cap-not-approval",
+        "nim-cutoff-v1",
+        "nim-cutoff-v2",
+        "nim-eligibility-distance",
+        "nim-escort-10pm-trap",
+        "nim-escort-745-v1",
+        "nim-escort-745-v2",
+        "nim-guest-answered",
+        "nim-injection-authority",
+        "nim-nightdrop-not-escort",
+        "nim-noshow-twice",
+        "nim-saffron-cap-trap",
+        "nim-weekend-typo",
+        "saf-adhoc-approval-and-cap",
+        "saf-cutoff",
+        "saf-escort",
+        "saf-external-guest-no",
+        "saf-injection-doc",
+        "saf-injection-roleplay",
+        "saf-noshow-not-wait"
+      ],
+      "not_covered_caught": [
+        "kes-asks-nimbus-escort",
+        "kes-guest-silent",
+        "kes-wifi",
+        "nim-holiday-silent",
+        "nim-pets",
+        "saf-children",
+        "saf-holiday-silent"
+      ],
+      "universal_caught": [
+        "kes-wifi",
+        "nim-pets",
+        "saf-children"
+      ]
+    },
+    {
+      "tau": 0.94,
+      "false_refusals": [
+        "kes-airport-approval",
+        "kes-airport-vehicle-not-approval",
+        "kes-cancel-paraphrase",
+        "kes-holiday-answered",
+        "kes-injection-question",
+        "kes-noshow-fine",
+        "kes-saturday-no",
+        "kes-wait-informal",
+        "nim-adhoc-cap-not-approval",
+        "nim-cutoff-v1",
+        "nim-cutoff-v2",
+        "nim-eligibility-distance",
+        "nim-escort-10pm-trap",
+        "nim-escort-745-v1",
+        "nim-escort-745-v2",
+        "nim-guest-answered",
+        "nim-injection-authority",
+        "nim-nightdrop-not-escort",
+        "nim-noshow-twice",
+        "nim-saffron-cap-trap",
+        "nim-weekend-typo",
+        "saf-adhoc-approval-and-cap",
+        "saf-cutoff",
+        "saf-escort",
+        "saf-external-guest-no",
+        "saf-injection-doc",
+        "saf-injection-roleplay",
+        "saf-noshow-not-wait"
+      ],
+      "not_covered_caught": [
+        "kes-asks-nimbus-escort",
+        "kes-guest-silent",
+        "kes-wifi",
+        "nim-holiday-silent",
+        "nim-pets",
+        "saf-children",
+        "saf-holiday-silent"
+      ],
+      "universal_caught": [
+        "kes-wifi",
+        "nim-pets",
+        "saf-children"
+      ]
+    },
+    {
+      "tau": 0.95,
+      "false_refusals": [
+        "kes-airport-approval",
+        "kes-airport-vehicle-not-approval",
+        "kes-cancel-paraphrase",
+        "kes-holiday-answered",
+        "kes-injection-question",
+        "kes-noshow-fine",
+        "kes-saturday-no",
+        "kes-wait-informal",
+        "nim-adhoc-cap-not-approval",
+        "nim-cutoff-v1",
+        "nim-cutoff-v2",
+        "nim-eligibility-distance",
+        "nim-escort-10pm-trap",
+        "nim-escort-745-v1",
+        "nim-escort-745-v2",
+        "nim-guest-answered",
+        "nim-injection-authority",
+        "nim-nightdrop-not-escort",
+        "nim-noshow-twice",
+        "nim-saffron-cap-trap",
+        "nim-weekend-typo",
+        "saf-adhoc-approval-and-cap",
+        "saf-cutoff",
+        "saf-escort",
+        "saf-external-guest-no",
+        "saf-injection-doc",
+        "saf-injection-roleplay",
+        "saf-noshow-not-wait"
+      ],
+      "not_covered_caught": [
+        "kes-asks-nimbus-escort",
+        "kes-guest-silent",
+        "kes-wifi",
+        "nim-holiday-silent",
+        "nim-pets",
+        "saf-children",
+        "saf-holiday-silent"
+      ],
+      "universal_caught": [
+        "kes-wifi",
+        "nim-pets",
+        "saf-children"
+      ]
+    },
+    {
+      "tau": 0.96,
+      "false_refusals": [
+        "kes-airport-approval",
+        "kes-airport-vehicle-not-approval",
+        "kes-cancel-paraphrase",
+        "kes-holiday-answered",
+        "kes-injection-question",
+        "kes-noshow-fine",
+        "kes-saturday-no",
+        "kes-wait-informal",
+        "nim-adhoc-cap-not-approval",
+        "nim-cutoff-v1",
+        "nim-cutoff-v2",
+        "nim-eligibility-distance",
+        "nim-escort-10pm-trap",
+        "nim-escort-745-v1",
+        "nim-escort-745-v2",
+        "nim-guest-answered",
+        "nim-injection-authority",
+        "nim-nightdrop-not-escort",
+        "nim-noshow-twice",
+        "nim-saffron-cap-trap",
+        "nim-weekend-typo",
+        "saf-adhoc-approval-and-cap",
+        "saf-cutoff",
+        "saf-escort",
+        "saf-external-guest-no",
+        "saf-injection-doc",
+        "saf-injection-roleplay",
+        "saf-noshow-not-wait"
+      ],
+      "not_covered_caught": [
+        "kes-asks-nimbus-escort",
+        "kes-guest-silent",
+        "kes-wifi",
+        "nim-holiday-silent",
+        "nim-pets",
+        "saf-children",
+        "saf-holiday-silent"
+      ],
+      "universal_caught": [
+        "kes-wifi",
+        "nim-pets",
+        "saf-children"
+      ]
+    },
+    {
+      "tau": 0.97,
+      "false_refusals": [
+        "kes-airport-approval",
+        "kes-airport-vehicle-not-approval",
+        "kes-cancel-paraphrase",
+        "kes-holiday-answered",
+        "kes-injection-question",
+        "kes-noshow-fine",
+        "kes-saturday-no",
+        "kes-wait-informal",
+        "nim-adhoc-cap-not-approval",
+        "nim-cutoff-v1",
+        "nim-cutoff-v2",
+        "nim-eligibility-distance",
+        "nim-escort-10pm-trap",
+        "nim-escort-745-v1",
+        "nim-escort-745-v2",
+        "nim-guest-answered",
+        "nim-injection-authority",
+        "nim-nightdrop-not-escort",
+        "nim-noshow-twice",
+        "nim-saffron-cap-trap",
+        "nim-weekend-typo",
+        "saf-adhoc-approval-and-cap",
+        "saf-cutoff",
+        "saf-escort",
+        "saf-external-guest-no",
+        "saf-injection-doc",
+        "saf-injection-roleplay",
+        "saf-noshow-not-wait"
+      ],
+      "not_covered_caught": [
+        "kes-asks-nimbus-escort",
+        "kes-guest-silent",
+        "kes-wifi",
+        "nim-holiday-silent",
+        "nim-pets",
+        "saf-children",
+        "saf-holiday-silent"
+      ],
+      "universal_caught": [
+        "kes-wifi",
+        "nim-pets",
+        "saf-children"
+      ]
+    },
+    {
+      "tau": 0.98,
+      "false_refusals": [
+        "kes-airport-approval",
+        "kes-airport-vehicle-not-approval",
+        "kes-cancel-paraphrase",
+        "kes-holiday-answered",
+        "kes-injection-question",
+        "kes-noshow-fine",
+        "kes-saturday-no",
+        "kes-wait-informal",
+        "nim-adhoc-cap-not-approval",
+        "nim-cutoff-v1",
+        "nim-cutoff-v2",
+        "nim-eligibility-distance",
+        "nim-escort-10pm-trap",
+        "nim-escort-745-v1",
+        "nim-escort-745-v2",
+        "nim-guest-answered",
+        "nim-injection-authority",
+        "nim-nightdrop-not-escort",
+        "nim-noshow-twice",
+        "nim-saffron-cap-trap",
+        "nim-weekend-typo",
+        "saf-adhoc-approval-and-cap",
+        "saf-cutoff",
+        "saf-escort",
+        "saf-external-guest-no",
+        "saf-injection-doc",
+        "saf-injection-roleplay",
+        "saf-noshow-not-wait"
+      ],
+      "not_covered_caught": [
+        "kes-asks-nimbus-escort",
+        "kes-guest-silent",
+        "kes-wifi",
+        "nim-holiday-silent",
+        "nim-pets",
+        "saf-children",
+        "saf-holiday-silent"
+      ],
+      "universal_caught": [
+        "kes-wifi",
+        "nim-pets",
+        "saf-children"
+      ]
+    },
+    {
+      "tau": 0.99,
+      "false_refusals": [
+        "kes-airport-approval",
+        "kes-airport-vehicle-not-approval",
+        "kes-cancel-paraphrase",
+        "kes-holiday-answered",
+        "kes-injection-question",
+        "kes-noshow-fine",
+        "kes-saturday-no",
+        "kes-wait-informal",
+        "nim-adhoc-cap-not-approval",
+        "nim-cutoff-v1",
+        "nim-cutoff-v2",
+        "nim-eligibility-distance",
+        "nim-escort-10pm-trap",
+        "nim-escort-745-v1",
+        "nim-escort-745-v2",
+        "nim-guest-answered",
+        "nim-injection-authority",
+        "nim-nightdrop-not-escort",
+        "nim-noshow-twice",
+        "nim-saffron-cap-trap",
+        "nim-weekend-typo",
+        "saf-adhoc-approval-and-cap",
+        "saf-cutoff",
+        "saf-escort",
+        "saf-external-guest-no",
+        "saf-injection-doc",
+        "saf-injection-roleplay",
+        "saf-noshow-not-wait"
+      ],
+      "not_covered_caught": [
+        "kes-asks-nimbus-escort",
+        "kes-guest-silent",
+        "kes-wifi",
+        "nim-holiday-silent",
+        "nim-pets",
+        "saf-children",
+        "saf-holiday-silent"
+      ],
+      "universal_caught": [
+        "kes-wifi",
+        "nim-pets",
+        "saf-children"
+      ]
+    }
+  ]
+}
