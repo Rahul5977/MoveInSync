@@ -77,21 +77,31 @@ class VectorStore:
         res = col.query(
             query_texts=[text], n_results=k, include=["documents", "metadatas", "distances"]
         )
-        out: list[RetrievedChunk] = []
-        for doc, meta, dist in zip(
-            res["documents"][0], res["metadatas"][0], res["distances"][0], strict=True
-        ):
-            out.append(
-                RetrievedChunk(
-                    chunk_id=str(meta["chunk_id"]),
-                    company_id=str(meta["company_id"]),
-                    company_name=str(meta["company_name"]),
-                    version=int(meta["version"]),
-                    doc_title=str(meta["doc_title"]),
-                    section_id=str(meta["section_id"]),
-                    section_title=str(meta["section_title"]),
-                    text=doc,
-                    score=1.0 - float(dist),  # cosine similarity
-                )
+        return [
+            _to_chunk(doc, meta, 1.0 - float(dist))  # cosine similarity
+            for doc, meta, dist in zip(
+                res["documents"][0], res["metadatas"][0], res["distances"][0], strict=True
             )
-        return out
+        ]
+
+    def all_chunks(self, name: str) -> list[RetrievedChunk]:
+        """Every chunk of a collection, exactly as embedded (for the BM25 index, D55)."""
+        res = self._client.get_collection(name).get(include=["documents", "metadatas"])
+        return [
+            _to_chunk(doc, meta, 0.0)
+            for doc, meta in zip(res["documents"], res["metadatas"], strict=True)
+        ]
+
+
+def _to_chunk(doc: str, meta, score: float) -> RetrievedChunk:
+    return RetrievedChunk(
+        chunk_id=str(meta["chunk_id"]),
+        company_id=str(meta["company_id"]),
+        company_name=str(meta["company_name"]),
+        version=int(meta["version"]),
+        doc_title=str(meta["doc_title"]),
+        section_id=str(meta["section_id"]),
+        section_title=str(meta["section_title"]),
+        text=doc,
+        score=score,
+    )

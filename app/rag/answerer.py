@@ -21,8 +21,9 @@ from pydantic import ValidationError
 from app.config import Settings
 from app.deadline import Clock, Deadline
 from app.llm.base import ConnectionDropped, LLMClient, LLMError, ModelOutputError
+from app.rag.bm25 import Bm25Cache
 from app.rag.prompt import SYSTEM_PROMPT, build_repair_prompt, build_user_prompt
-from app.rag.retriever import retrieve
+from app.rag.retriever import search
 from app.schemas import (
     AnswerMeta,
     AnswerStatus,
@@ -93,6 +94,7 @@ def answer_question(
     llm: LLMClient,
     settings: Settings,
     clock: Clock = time.monotonic,
+    bm25: Bm25Cache | None = None,
 ) -> tuple[AskResponse, Trace]:
     deadline = Deadline(settings.request_deadline_s, clock)
     trace = Trace()
@@ -104,7 +106,10 @@ def answer_question(
     ) -> tuple[AskResponse, Trace]:
         trace.gate = gate
         meta = AnswerMeta(
-            llm_calls=llm_calls, latency_ms=deadline.elapsed_ms(), policy_version=version
+            llm_calls=llm_calls,
+            latency_ms=deadline.elapsed_ms(),
+            policy_version=version,
+            retrieval_mode=settings.retrieval_mode,
         )
         return AskResponse(status=status, answer=answer, citations=list(cites), meta=meta), trace
 
@@ -118,8 +123,15 @@ def answer_question(
 
     # 1. Retrieval: company from the JWT only; active collection only.
     try:
-        pool, version = retrieve(
-            principal.company_id, question, registry, store, settings.retrieval_pool
+        pool, version, best_vector = search(
+            principal.company_id,
+            question,
+            registry,
+            store,
+            settings.retrieval_pool,
+            mode=settings.retrieval_mode,
+            bm25=bm25,
+            rrf_k=settings.rrf_k,
         )
     except Exception as exc:  # store unavailable etc. -> user gets a clear "try again"
         log.exception("Retrieval failed")
@@ -128,9 +140,9 @@ def answer_question(
         return not_covered("no_policy")
     trace.retrieved_ids = [c.chunk_id for c in pool]
 
-    # 2. Tau gate: clearly off-topic -> not covered with 0 LLM calls.
-    trace.best_score = pool[0].score if pool else None
-    if not pool or pool[0].score < settings.retrieval_min_score:
+    # 2. Tau gate on the best VECTOR score (both modes, D56): off-topic -> 0 LLM calls.
+    trace.best_score = best_vector
+    if not pool or best_vector is None or best_vector < settings.retrieval_min_score:
         return not_covered("tau")
 
     # 3. Send the top-k as data.
