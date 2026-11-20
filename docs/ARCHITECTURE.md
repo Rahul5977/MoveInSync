@@ -1,6 +1,6 @@
 # Architecture — Commute Policy Assistant (Case Study B)
 
-Status: **v3, reflects the code at commit `e3d7fc9`** (updated Fri 20 Nov, 11:15 IST).
+Status: **v3, reflects the code at commit `5a6b6fd`** (updated Fri 20 Nov, 11:30 IST).
 Changes from v2 are marked **[v3]**. Build status per item: ✅ built and tested · 🔜 planned · ❓ open.
 Any further change goes in the Decision Log first.
 
@@ -188,7 +188,7 @@ LLM output schema (Groq JSON mode) (🔜; `app/schemas.py::LLMAnswer` currently 
   written, ❗ image not yet built and verified.
 
 ## 9. Testing strategy
-Current: **29 tests, all passing, ~23 s** (each test re-embeds all three policies in a fresh temp `var/`).
+Current: **32 tests, all passing, ~22 s** (each test re-embeds all three policies in a fresh temp `var/`).
 
 - **Unit**
   - chunker: section ids, metadata, header, determinism, paragraph splitting, subsections,
@@ -199,7 +199,7 @@ Current: **29 tests, all passing, ~23 s** (each test re-embeds all three policie
 - **Isolation**
   - every company × 3 questions → only own chunks ✅
   - unknown company → nothing ✅
-  - body `company_id` → 422 ✅
+  - extra form field `company_id` on ingest → 422 ✅; missing file / non-UTF-8 → 422 ✅
   - Kestrel admin uploading a Nimbus doc → 422 ✅
   - "What is Nimbus's escort time?" via `/ask` with a Kestrel token 🔜
   - every eval question 🔜
@@ -208,7 +208,7 @@ Current: **29 tests, all passing, ~23 s** (each test re-embeds all three policie
   - ingest v2 → only v2 retrieved, `7:30 PM` in top chunk ✅ (`/ask` flip no → yes 🔜)
   - forced failure on batch 2 of 3 → v1 still active, `nimbus_v2` dropped, history shows `failed`, retry succeeds ✅
   - restart after v2 → still v2 (`skipped: already active`) ✅
-  - v1 after v2 → 409 ✅; re-ingest v2 → 409 🔜 (same code path, no explicit test)
+  - v1 after v2 → 409 ✅; re-ingest v2 → 409 ✅
   - malformed doc → 422, v1 kept ✅
   - simulated crash (row left `pending`) → reconciler marks it failed on restart 🔜
 - **Failure paths**: LLM timeout, 429, invalid JSON twice, no key → all `try_again`, never a 500. 🔜
@@ -364,7 +364,7 @@ Key sections for the eval:
 | D26 | **[v3]** Long sections split by paragraph at 150 words, header on every piece (replaces "fail test above ~400 tokens") | Agreed, ✅ | User instruction 11:00; MiniLM truncates at 256 tokens |
 | D27 | **[v3]** Per-company in-process ingest lock | Implemented, ✅ | Concurrent same-version ingests can't clobber a collection |
 | D28 | **[v3]** `GET /admin/policy` shows the admin's active version + history | Implemented, ✅ | Demo + debugging; admin-only, own company |
-| D29 | **[v3]** Ingest body = multipart upload, single form field `file`; any other form field (e.g. `company_id`) → 422 | Agreed, 🔜 | `curl -F file=@…` is clean in demo/viva; extra-field rejection keeps "no client override" explicit |
+| D29 | **[v3]** Ingest body = multipart upload, single form field `file`; any other form field (e.g. `company_id`) → 422 | Agreed, ✅ | `curl -F file=@…` is clean in demo/viva; extra-field rejection keeps "no client override" explicit |
 | D30 | **[v3]** Header carries company name, cross-checked against the token's company (token stays the identity source) | Agreed, ✅ | Guard against an admin loading the wrong company's file |
 | D31 | **[v3]** Policy files in per-company folders: `seed/<co>/v1.md`, `updates/<co>/v2.md` | Agreed, ✅ | Folder name = company_id, no filename parsing |
 | D32 | **[v3]** Bad ingest document (bad header, wrong company, empty, too large, not UTF-8) → 422 | Agreed, ✅ | One code for "understood but content invalid", same as FastAPI validation |
