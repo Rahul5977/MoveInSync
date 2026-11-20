@@ -5,6 +5,8 @@
 Cycles through the answerable `seed`-phase questions in eval/cases.jsonl (so each request
 normally makes one real LLM call), throttled to respect Groq free-tier rate limits. Reports
 p50/p95 of client wall-clock time and of the server's own `meta.latency_ms`, plus status counts.
+Answered requests and try_again responses (e.g. Groq 429) are also reported separately: the
+first is the latency budget, the second is how fast a failure reaches the user.
 Writes eval/bench.json. Run it on a server with Nimbus at v1 (questions are seed-phase).
 """
 
@@ -48,6 +50,7 @@ def main(argv: list[str] | None = None) -> int:
 
     tokens = {}
     wall, server, statuses, calls = [], [], Counter(), Counter()
+    by_status: dict[str, list[float]] = {}
     with httpx.Client(timeout=10) as client:
         for i in range(args.n):
             q = pool[i % len(pool)]
@@ -65,6 +68,7 @@ def main(argv: list[str] | None = None) -> int:
             wall.append(ms)
             server.append(body["meta"]["latency_ms"])
             statuses[body["status"]] += 1
+            by_status.setdefault(body["status"], []).append(ms)
             calls[body["meta"]["llm_calls"]] += 1
             print(f"  {i + 1:>3} {co:<8} {body['status']:<12} {ms:7.0f} ms  {q['question'][:60]}")
             if i < args.n - 1:
@@ -83,6 +87,15 @@ def main(argv: list[str] | None = None) -> int:
         },
         "server_ms": {"p50": percentile(server, 50), "p95": percentile(server, 95)},
         "statuses": dict(statuses),
+        "client_ms_by_status": {
+            st: {
+                "n": len(v),
+                "p50": round(percentile(v, 50)),
+                "p95": round(percentile(v, 95)),
+                "max": round(max(v)),
+            }
+            for st, v in sorted(by_status.items())
+        },
         "llm_calls_histogram": {str(k): v for k, v in sorted(calls.items())},
         "under_3s_p95": percentile(wall, 95) < 3000,
     }
