@@ -51,9 +51,12 @@ Each claim points to the evidence (tests in `tests/`, sections in [docs/EVAL_REP
 - **Honest evaluation.** τ tuned on the same cases, stated with its 0.017 margin (§4); every
   answer reviewed by hand, 0 disagreements (§10); 2 held-out injection cases added before the
   prompt change ran (§3.1); the default retrieval mode rule fixed before measuring, and the BM25
-  regression (`nim-weekend-typo` 4 → 8) reported, so vector stays the default (§3.3).
-- **Known failures: 3/35, all safe refusals** ("not covered", never a wrong or foreign rule),
-  each traced to a vocabulary mismatch with its retrieval rank (§6).
+  regression (`nim-weekend-typo` 4 → 8) reported, so vector stays the default (§3.3). A 12-question
+  **held-out set** written after tuning (§3.5) exposed τ refusing 4 of 10 answerable questions; τ
+  was deliberately not re-tuned on it (D62). Four experiments were pre-registered with merge rules
+  and reported pass or fail (§3.3, §3.4, §3.6, §3.7); only D61 passed.
+- **Known failures: 2/35 and 5/12 held-out, all safe refusals except one scorer miss** ("not
+  covered", never a wrong or foreign rule): vocabulary mismatch on the 35 (§6), τ on the held-out (§3.5).
 
 ## 2. Tokens
 
@@ -112,7 +115,7 @@ cover this…") or `try_again` (HTTP 503, e.g. no key or the LLM provider is dow
 
 **With Docker only:**
 ```bash
-docker compose --profile test run --rm tests                                  # 140 tests, keyless
+docker compose --profile test run --rm tests                                  # 172 tests, keyless
 docker compose run --rm api uv run --no-sync python -m eval.run_eval          # eval (see below)
 ```
 
@@ -133,18 +136,19 @@ uv run python -m eval.run_eval --ranks # retrieval-only diagnostic, no LLM
 
 ## 5. Headline results
 
-From [docs/EVAL_REPORT.md](docs/EVAL_REPORT.md) (35 hand-written cases, Groq `qwen/qwen3.8-27b`):
+From [docs/EVAL_REPORT.md](docs/EVAL_REPORT.md) (Groq `qwen/qwen3.8-27b`, rewrite on a miss enabled, D61):
 
 | | |
 |---|---|
-| Pass rate | **32/35** (all 3 failures are safe "not covered" refusals caused by retrieval misses) |
-| Cross-company leaks | **0** |
-| Not-covered recall | **1.00** (every question the policy doesn't cover is refused) |
-| Citation / key-fact accuracy | 1.00 / 1.00 on answered cases |
-| Latency (Docker, HTTP, real Groq) | p95 **≈ 1 s** (992 ms), budget 3 s |
-| LLM calls | 1 per question in normal runs; max 2 (one connection retry, D53); budget 2 |
+| Pass rate, 35 cases | **33/35** (32/35 before D61; both failures are safe "not covered" refusals from retrieval misses) |
+| Pass rate, 12 held-out | **7/12**, written after tuning. τ refuses 4 answerable ones before the LLM (§3.5, D62); 1 is a scorer miss |
+| Cross-company leaks | **0** (35 + held-out) |
+| Not-covered recall | **1.00** (every question the policy doesn't cover is refused, 9/9) |
+| Citation / key-fact accuracy | 1.00 / 1.00 on answered cases (35) |
+| Latency (Docker, HTTP, real Groq) | answered p95 **867 ms**; a 2-call answer 1,017 ms; budget 3 s |
+| LLM calls | 1 for most questions; 2 for a repair, a dropped connection, or a round-2 search after a miss; never 3 |
 
-The author reviewed every answer by hand: 0 disagreements with the automatic score.
+The author reviews every answer by hand (§10); auto-scores are never changed afterwards.
 
 ## 6. Design decisions (summary)
 
@@ -178,18 +182,27 @@ Full log with 59 decisions and their reasons: [docs/ARCHITECTURE.md](docs/ARCHIT
 - **Dropped connections (D53):** one retry, only on connection errors, only with ≥ 1.0 s left. It
   uses the repair slot and counts as a call, so the total stays ≤ 2. Rate limits (429) are not
   retried.
+- **Rewrite on a miss (D61):** if the model says "not covered" it may suggest a search phrase.
+  One more search (same company, same active policy) and one more call answering the **original**
+  question happen only if the first answer used exactly 1 call, ≥ 1.2 s is left and the new top 3
+  sections differ. So a repair, a retry or a rewrite, never two of them: at most 2 calls. Any
+  failure in round 2 → "not covered" (round 1 already said so). The phrase is never shown to the
+  user or put in a prompt.
 - **≤ 3 citations by construction:** only the top 3 sections are sent, and citations must be among them.
 
 ## 8. Trade-offs and known limitations
 
-- **Small, self-written eval set** (35 cases, one author); τ = 0.38 was tuned on the same cases
-  (margin only 0.017), so unseen phrasings near the boundary may be refused.
+- **τ is overfitted to the 35 cases.** τ = 0.38 was tuned on them (margin 0.017), and on 12 new
+  held-out questions it wrongly refused 4 of 10 answerable ones before any LLM call (scores
+  0.324–0.377). It was not re-tuned on the held-out set (that would leave no unbiased test). Small,
+  self-written eval sets (35 + 12, one author).
 - **Retrieval misses from vocabulary mismatch** ("fined" vs "deducted", "in advance" vs "cut-off",
   "sat" vs "Saturday"). They fail safe ("not covered"). The hybrid BM25 + RRF bonus is built
   (`RETRIEVAL_MODE=hybrid`) but **vector stays the default**: hit@3 didn't improve and one case got
   worse. A stronger embedder (bge-small, D59) was also measured and **not merged**: hit@3 0.893 →
   0.929 but one case got worse, and its scores no longer separate off-topic questions (τ margin
-  +0.017 → −0.039). Next to try: query rewriting or re-ranking the pool, keeping MiniLM for τ.
+  +0.017 → −0.039). A cross-encoder reranker (D60) fixed some misses but lost one and added
+  ~0.6 s: **not merged**. Rewrite on a miss (D61) fixed "sat" and one held-out question: **merged**.
 - **Cross-company questions are refused**, not answered with the user's own rule. Less helpful,
   but it can never be mistaken for another company's rule.
 - **Fixed refusal text** hides the model's reason for refusing, so a refusal can never contain a guess.
@@ -202,14 +215,14 @@ Full log with 59 decisions and their reasons: [docs/ARCHITECTURE.md](docs/ARCHIT
 
 Each item: what it fixes, and what it costs.
 
-- **First, 10–15 new held-out questions** (paraphrases and vocabulary mismatches). The 35 cases have
-  already been used for tuning, so any retrieval change below needs fresh questions to be judged on.
-- **Cross-encoder reranker.** Fixes ranking with no extra LLM call. Each company has ~22 chunks, so
-  it can score all of them, which also reaches the 2 misses outside the top 8. Costs ~50–200 ms
-  per question and ~90 MB in the image.
-- **Query rewriting.** Likely fixes all 3 vocabulary misses ("fined", "in advance", "sat"). Costs the
-  2nd LLM call (today's repair/retry slot), ~0.5–0.8 s, and a second prompt-injection surface; τ
-  would stay on the original question.
+- **Recalibrate τ** on a larger labelled set with its own held-out split, or make τ a coarse gate
+  (only clearly off-topic, e.g. < 0.3) and let the LLM's "not covered" decide the rest. Fixes the
+  4 held-out false refusals (D62); costs one call per near-miss question.
+- **A bigger held-out set** (50+ questions, ideally written by someone else): the 35 + 12 are now
+  both used for decisions, so the next change needs fresh questions.
+- **A cheaper reranker.** The cross-encoder (D60) reached sections the vector top 8 missed, but
+  scoring all ~22 chunks cost ~0.5 s and lost one case. Rerank only the vector top 8 plus a few
+  BM25 hits, or use a smaller model; judge it on new held-out questions.
 - **Stronger embedder.** Needs a recalibrated or relative not-covered gate first: with bge-small
   the off-topic and answerable scores overlap (EVAL_REPORT §3.4).
 - **Scale.** Postgres with a database-level ingest lock (several workers); background ingestion with
@@ -229,6 +242,6 @@ app/
 data/policies/       seed/<company>/v1.md (loaded at start), updates/nimbus/v2.md (upload demo)
 eval/                cases.jsonl, run_eval.py, scoring.py, results.jsonl (submission), reports
 scripts/             issue_token.py, bench.py
-tests/               140 tests, keyless
+tests/               172 tests, keyless
 docs/                ARCHITECTURE.md (design + decision log), EVAL_REPORT.md
 ```
