@@ -38,3 +38,4 @@ chroma/
 
 # demo video output (scripts/demo.tape)
 recordings/
+models/
