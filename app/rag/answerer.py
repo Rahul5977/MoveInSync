@@ -19,7 +19,7 @@ from pydantic import ValidationError
 
 from app.config import Settings
 from app.deadline import Clock, Deadline
-from app.llm.base import LLMClient, LLMError, TruncatedOutput
+from app.llm.base import LLMClient, LLMError, ModelOutputError
 from app.rag.prompt import SYSTEM_PROMPT, build_repair_prompt, build_user_prompt
 from app.rag.retriever import retrieve
 from app.schemas import (
@@ -148,8 +148,8 @@ def answer_question(
             break
         except LLMError as exc:
             return try_again("llm_error", str(exc))
-        except (InvalidOutput, TruncatedOutput) as exc:
-            if isinstance(exc, TruncatedOutput):
+        except (InvalidOutput, ModelOutputError) as exc:
+            if isinstance(exc, ModelOutputError):
                 raw = exc.partial
             if llm_calls >= 2:
                 return try_again("invalid_output", f"invalid after repair: {exc}")

@@ -144,3 +144,25 @@ def test_groq_finish_reason_length_is_truncated_output():
     with pytest.raises(TruncatedOutput) as info:
         _groq(lambda req: resp).complete_json("s", "u", 1.0)
     assert info.value.partial == '{"covered": true, "ans'
+
+
+def test_groq_json_validate_failed_is_model_output_error():
+    from app.llm.base import JsonValidationFailed
+
+    err = {
+        "error": {
+            "message": "Failed to validate JSON.",
+            "type": "invalid_request_error",
+            "code": "json_validate_failed",
+            "failed_generation": '{"covered": tru',
+        }
+    }
+    with pytest.raises(JsonValidationFailed) as info:
+        _groq(lambda req: httpx.Response(400, json=err)).complete_json("s", "u", 1.0)
+    assert info.value.partial == '{"covered": tru'
+
+
+def test_groq_other_400_is_provider_error():
+    err = {"error": {"message": "bad", "code": "model_not_found"}}
+    with pytest.raises(LLMError, match="http_400"):
+        _groq(lambda req: httpx.Response(400, json=err)).complete_json("s", "u", 1.0)

@@ -452,3 +452,20 @@ def test_health_reports_llm_not_ready_and_warns_once(settings, token_for, caplog
 def test_health_reports_ready_with_key(settings):
     with app_with(settings, GroqLLM("gsk_test_not_real", "m", 2.5)) as client:
         assert client.get("/health").json()["llm"] == {"provider": "groq", "ready": True}
+
+
+def test_provider_json_validation_failure_triggers_repair(settings, token_for):
+    from app.llm.base import JsonValidationFailed
+
+    state = {"n": 0}
+
+    def responder(system, user):
+        state["n"] += 1
+        if state["n"] == 1:
+            raise JsonValidationFailed('{"covered": tru')
+        assert "provider JSON validation failed" in user
+        return reply()(system, user)
+
+    with app_with(settings, FakeLLM(responder)) as client:
+        body = ask(client, "nimbus", ESCORT_Q, token_for).json()
+    assert body["status"] == "answered" and body["meta"]["llm_calls"] == 2

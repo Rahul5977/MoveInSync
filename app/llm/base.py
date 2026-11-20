@@ -7,16 +7,30 @@ class LLMError(Exception):
     """Any LLM failure: timeout, 429 quota, 5xx, network, missing key. Caller maps to TRY_AGAIN."""
 
 
-class TruncatedOutput(Exception):
-    """The model stopped because it hit max_tokens (finish_reason == "length").
+class ModelOutputError(Exception):
+    """The provider worked, but the model's output is unusable.
 
-    Not a provider failure: the answerer treats it as invalid output (repair call or try_again),
-    so a cut-off JSON is never half-parsed (D41).
+    Not a provider failure: the answerer treats it as invalid output (repair call if time
+    allows, else try_again). `partial` is whatever the model produced, for the repair prompt.
     """
 
-    def __init__(self, partial: str) -> None:
-        super().__init__("truncated output (finish_reason=length)")
+    reason = "invalid model output"
+
+    def __init__(self, partial: str = "") -> None:
+        super().__init__(self.reason)
         self.partial = partial
+
+
+class TruncatedOutput(ModelOutputError):
+    """Hit max_tokens (finish_reason == "length"); a cut-off JSON is never half-parsed (D41)."""
+
+    reason = "truncated output (finish_reason=length)"
+
+
+class JsonValidationFailed(ModelOutputError):
+    """Provider-side JSON mode rejected the generation (Groq 400 json_validate_failed; D46)."""
+
+    reason = "provider JSON validation failed"
 
 
 class LLMClient(Protocol):
@@ -26,6 +40,6 @@ class LLMClient(Protocol):
     def complete_json(self, system: str, user: str, timeout_s: float) -> str:
         """Return raw model text expected to be a JSON object.
 
-        Raises LLMError (provider failure) or TruncatedOutput (hit the token limit).
+        Raises LLMError (provider failure) or ModelOutputError (unusable model output).
         """
         ...

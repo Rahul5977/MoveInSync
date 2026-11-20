@@ -6,7 +6,7 @@ A missing key is NOT a startup error (D18): the app still starts, /ask returns t
 
 import httpx
 
-from app.llm.base import LLMError, TruncatedOutput
+from app.llm.base import JsonValidationFailed, LLMError, TruncatedOutput
 
 GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
 
@@ -47,6 +47,10 @@ class GroqLLM:
         except httpx.HTTPError as exc:
             raise LLMError(f"network: {type(exc).__name__}") from exc
 
+        if resp.status_code == 400:
+            err = _error_body(resp)
+            if err.get("code") == "json_validate_failed":  # D46: model output, not provider
+                raise JsonValidationFailed(str(err.get("failed_generation") or ""))
         if resp.status_code == 429:
             raise LLMError("rate_limited")
         if resp.status_code >= 400:
@@ -59,3 +63,11 @@ class GroqLLM:
         if choice.get("finish_reason") == "length":
             raise TruncatedOutput(content or "")
         return content
+
+
+def _error_body(resp: httpx.Response) -> dict:
+    try:
+        err = resp.json().get("error", {})
+    except ValueError:
+        return {}
+    return err if isinstance(err, dict) else {}
