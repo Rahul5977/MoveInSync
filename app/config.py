@@ -34,6 +34,10 @@ class Settings(BaseSettings):
     # D56/D57: "hybrid" = vector + BM25 fused with RRF (k = 60). tau always uses the vector score.
     retrieval_mode: Literal["vector", "hybrid"] = "vector"
     rrf_k: int = 60
+    # D60: cross-encoder reranks ALL chunks of the active collection (cap 40); tau unchanged.
+    rerank: Literal["off", "on"] = "off"
+    rerank_max_candidates: int = 40
+    reranker_model_dir: Path = Path("models/ms-marco-MiniLM-L6-v2")
     # D5/D52: tau, the off-topic gate on best cosine similarity. From the eval sweep (D50):
     # highest tau with zero false refusals. Margin is thin (0.017); see EVAL_REPORT §4.
     retrieval_min_score: float = 0.38

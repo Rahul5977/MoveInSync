@@ -6,12 +6,16 @@ Returns the whole candidate pool (D22), best first; the answerer decides what to
 
 Hybrid mode (D56): vector and BM25 each fetch their own top `k` from the same active collection,
 merged with Reciprocal Rank Fusion. tau stays on the best *vector* score.
+
+Rerank (D60): candidates = ALL chunks of the active collection (cached, cap 40), sorted by a
+cross-encoder; the vector query still runs, only for tau (best MiniLM score of the question).
 """
 
 import logging
 from typing import NamedTuple
 
 from app.rag.bm25 import Bm25Cache
+from app.rag.reranker import Reranker
 from app.schemas import RetrievedChunk
 from app.store.registry import Registry
 from app.store.vector import VectorStore
@@ -60,6 +64,7 @@ def search(
     mode: str = "vector",
     bm25: Bm25Cache | None = None,
     rrf_k: int = 60,
+    reranker: Reranker | None = None,
 ) -> Retrieval:
     active = registry.active(company_id)
     if active is None:
@@ -68,7 +73,9 @@ def search(
         store.query(active.collection_name, question, k), key=lambda c: c.score, reverse=True
     )
     best = vector[0].score if vector else None
-    if mode == "hybrid":
+    if reranker is not None:  # D60: rerank every chunk of the active collection
+        chunks = reranker.rerank(question, reranker.candidates(store, active.collection_name))
+    elif mode == "hybrid":
         index = (bm25 or Bm25Cache()).get(store, active.collection_name)
         chunks = rrf_merge(vector, index.search(question, k), rrf_k)
     else:

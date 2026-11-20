@@ -24,6 +24,7 @@ from app.llm.base import LLMClient
 from app.llm.factory import make_llm
 from app.rag.answerer import answer_question
 from app.rag.bm25 import Bm25Cache
+from app.rag.reranker import CrossEncoder, Reranker
 from app.schemas import AnswerStatus, AskRequest, AskResponse, Principal
 from app.store.registry import Registry, VersionConflict
 from app.store.vector import UnknownCompany, VectorStore
@@ -72,10 +73,17 @@ def create_app(
         app.state.reconcile_outcomes = reconcile(reg, vs)  # D16: before seeding
         app.state.seed_outcomes = seed_policies(reg, vs, s)
         app.state.bm25 = Bm25Cache()  # D56: warm one index per active collection
+        app.state.reranker = None
+        if s.rerank == "on":  # D60: load the cross-encoder once; candidates warmed below
+            app.state.reranker = Reranker(
+                CrossEncoder(s.reranker_model_dir), s.rerank_max_candidates
+            )
         for company_id in s.companies:
             active = reg.active(company_id)
             if active:
                 app.state.bm25.build(vs, active.collection_name)
+                if app.state.reranker is not None:
+                    app.state.reranker.build(vs, active.collection_name)
         yield
 
     app = FastAPI(title="Commute Policy Assistant", version="0.1.0", lifespan=lifespan)
@@ -100,7 +108,14 @@ def create_app(
         # company_id comes from `principal` (JWT) only — never from `req`.
         st = request.app.state
         resp, trace = answer_question(
-            principal, req.question, st.registry, st.store, st.llm, s, bm25=st.bm25
+            principal,
+            req.question,
+            st.registry,
+            st.store,
+            st.llm,
+            s,
+            bm25=st.bm25,
+            reranker=st.reranker,
         )
         log.info(
             "ask company=%s status=%s gate=%s best=%s sent=%s calls=%d ms=%d",
@@ -144,6 +159,8 @@ def create_app(
         except IngestFailed as exc:
             raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, str(exc)) from exc
         st.bm25.build(st.store, res.collection_name)  # D56: rebuilt on activation
+        if st.reranker is not None:  # D60: candidates rebuilt on activation too
+            st.reranker.build(st.store, res.collection_name)
         return IngestResponse(
             company_id=res.company_id,
             version=res.version,

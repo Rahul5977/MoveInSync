@@ -32,6 +32,7 @@ from app.llm.base import LLMClient
 from app.llm.factory import make_llm
 from app.rag.answerer import answer_question
 from app.rag.bm25 import Bm25Cache
+from app.rag.reranker import CrossEncoder, Reranker
 from app.rag.retriever import retrieve, search
 from app.schemas import Principal
 from app.store.registry import Registry
@@ -111,6 +112,14 @@ class Env:
         self.registry.init_schema()
         self.store = VectorStore(self.settings.chroma_dir)
         self.bm25 = Bm25Cache()  # used only in hybrid mode; builds per collection on first use
+        self.reranker = (  # D60: only with RERANK=on; candidates build per collection on first use
+            Reranker(
+                CrossEncoder(self.settings.reranker_model_dir),
+                self.settings.rerank_max_candidates,
+            )
+            if self.settings.rerank == "on"
+            else None
+        )
         outcomes = seed_policies(self.registry, self.store, self.settings)
         if not all(o.startswith("ingested") for o in outcomes.values()):
             sys.exit(f"Seeding failed: {outcomes}")
@@ -256,6 +265,7 @@ def run_ranks(
                     settings.retrieval_pool,
                     mode=mode,
                     bm25=env.bm25,
+                    reranker=env.reranker,
                     rrf_k=settings.rrf_k,
                 )
                 ranks[c["id"]] = expected_rank(c, res.chunks)
@@ -312,7 +322,14 @@ def ask_case(env: Env, llm: LLMClient, case: dict, throttle_s: float) -> tuple[d
     p = Principal(sub="eval", company_id=case["input"]["company"], role="employee")
     for attempt in range(RATE_LIMIT_RETRIES + 1):
         resp, trace = answer_question(
-            p, case["input"]["question"], env.registry, env.store, llm, env.settings, bm25=env.bm25
+            p,
+            case["input"]["question"],
+            env.registry,
+            env.store,
+            llm,
+            env.settings,
+            bm25=env.bm25,
+            reranker=env.reranker,
         )
         if trace.error == "rate_limited" and attempt < RATE_LIMIT_RETRIES:
             notes.append(f"rate-limited, retry {attempt + 1} after {RATE_LIMIT_WAIT_S:.0f}s")
@@ -454,6 +471,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--sweep", action="store_true", help="tau sweep, retrieval only (no LLM)")
     ap.add_argument("--ranks", action="store_true", help="expected-section rank in the pool")
     ap.add_argument("--retrieval", choices=["vector", "hybrid"], help="override RETRIEVAL_MODE")
+    ap.add_argument("--rerank", choices=["off", "on"], help="override RERANK (D60)")
     ap.add_argument(
         "--cases", type=Path, action="append", help="case file (repeatable; default cases.jsonl)"
     )
@@ -468,6 +486,8 @@ def main(argv: list[str] | None = None) -> int:
         settings = settings.model_copy(update={"retrieval_min_score": args.tau})
     if args.retrieval:
         settings = settings.model_copy(update={"retrieval_mode": args.retrieval})
+    if args.rerank:
+        settings = settings.model_copy(update={"rerank": args.rerank})
     cases = load_cases(*(args.cases or []))
 
     if args.ranks:
@@ -520,6 +540,7 @@ def main(argv: list[str] | None = None) -> int:
         "provider": provider,
         "model": settings.groq_model if provider == "groq" else "extractive-fake",
         "retrieval_mode": settings.retrieval_mode,
+        "rerank": settings.rerank,
         "tau": settings.retrieval_min_score,
         "top_k": settings.retrieval_top_k,
         "pool": settings.retrieval_pool,

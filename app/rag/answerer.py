@@ -23,6 +23,7 @@ from app.deadline import Clock, Deadline
 from app.llm.base import ConnectionDropped, LLMClient, LLMError, ModelOutputError
 from app.rag.bm25 import Bm25Cache
 from app.rag.prompt import SYSTEM_PROMPT, build_repair_prompt, build_user_prompt
+from app.rag.reranker import Reranker
 from app.rag.retriever import search
 from app.schemas import (
     AnswerMeta,
@@ -61,6 +62,7 @@ class Trace:
     model_cited_ids: list[str] = field(default_factory=list)
     error: str | None = None
     retried: str | None = None  # D53: reason for the one connection-level retry, if any
+    rerank_scores: dict[str, float] | None = None  # D60: cross-encoder logit per chunk id
 
 
 class InvalidOutput(ValueError):
@@ -144,10 +146,11 @@ def answer_question(
     settings: Settings,
     clock: Clock = time.monotonic,
     bm25: Bm25Cache | None = None,
+    reranker: Reranker | None = None,
 ) -> tuple[AskResponse, Trace]:
     ask = Ask(settings, Deadline(settings.request_deadline_s, clock))
     try:
-        pool = _retrieve(ask, principal.company_id, question, registry, store, bm25)  # 1
+        pool = _retrieve(ask, principal.company_id, question, registry, store, bm25, reranker)
         sent = pool[: settings.retrieval_top_k]  # 2. only the top k go to the model
         ask.trace.sent_ids = list(dict.fromkeys(c.chunk_id for c in sent))
         out = _call_llm(ask, build_user_prompt(question, sent), llm)  # 3
@@ -166,9 +169,12 @@ def answer_question(
     return ask.response(AnswerStatus.ANSWERED, "answered", answer, citations)
 
 
-def _retrieve(ask: Ask, company_id, question, registry, store, bm25) -> list[RetrievedChunk]:
+def _retrieve(
+    ask: Ask, company_id, question, registry, store, bm25, reranker=None
+) -> list[RetrievedChunk]:
     """Step 1: search ONLY this company's active collection, then apply the tau gate."""
     s = ask.settings
+    reranker = reranker if s.rerank == "on" else None  # D60
     try:
         pool, ask.version, best_vector = search(
             company_id,
@@ -179,6 +185,7 @@ def _retrieve(ask: Ask, company_id, question, registry, store, bm25) -> list[Ret
             mode=s.retrieval_mode,
             bm25=bm25,
             rrf_k=s.rrf_k,
+            reranker=reranker,
         )
     except Exception as exc:  # store unavailable etc. -> user gets a clear "try again"
         log.exception("Retrieval failed")
@@ -186,6 +193,8 @@ def _retrieve(ask: Ask, company_id, question, registry, store, bm25) -> list[Ret
     if ask.version is None:
         raise not_covered("no_policy")
     ask.trace.retrieved_ids = [c.chunk_id for c in pool]
+    if reranker is not None:
+        ask.trace.rerank_scores = {c.chunk_id: round(c.score, 4) for c in pool}
     _tau_gate(ask, pool, best_vector)
     return pool
 
