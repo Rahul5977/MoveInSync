@@ -1,0 +1,31 @@
+{
+  "timestamp": "2026-11-20T07:22:07+00:00",
+  "base": "http://localhost:8000",
+  "health": {
+    "status": "ok",
+    "llm": {
+      "provider": "groq",
+      "ready": true
+    }
+  },
+  "n": 30,
+  "throttle_s": 3.0,
+  "client_ms": {
+    "p50": 448,
+    "p95": 1185,
+    "max": 1370
+  },
+  "server_ms": {
+    "p50": 444,
+    "p95": 1176
+  },
+  "statuses": {
+    "answered": 22,
+    "not_covered": 5,
+    "try_again": 3
+  },
+  "llm_calls_histogram": {
+    "1": 30
+  },
+  "under_3s_p95": true
+}
