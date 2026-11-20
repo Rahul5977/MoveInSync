@@ -13,11 +13,14 @@ class Principal(BaseModel):
     role: str = "employee"
 
 
+QUESTION_MIN, QUESTION_MAX = 3, 500
+
+
 class AskRequest(BaseModel):
     # extra="forbid": a client sending company_id (or anything else) gets a 422.
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
 
-    question: str = Field(min_length=3, max_length=500)
+    question: str = Field(min_length=QUESTION_MIN, max_length=QUESTION_MAX)
 
 
 class AnswerStatus(StrEnum):

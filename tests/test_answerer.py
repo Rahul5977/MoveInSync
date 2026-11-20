@@ -275,7 +275,51 @@ def test_question_validation_plain_messages(client, token_for):
     for q in ("hi", "   ", "x" * 501):
         r = ask(client, "nimbus", q, token_for)
         assert r.status_code == 422, q
-        assert isinstance(r.json()["detail"], str) and r.json()["detail"].startswith("question:")
+        assert r.json() == {"detail": "The question must be between 3 and 500 characters."}
+
+
+def _post_ask(client, token_for, **kw):
+    return client.post("/ask", headers=token_for("nimbus"), **kw)
+
+
+def test_validation_errors_are_one_sentence_and_never_echo_input(client, token_for):
+    secret = "<script>alert(1)</script>"
+    cases = [
+        ({"json": {}}, "The 'question' field is required."),
+        ({"json": {"question": 42}}, "The 'question' field must be text."),
+        (
+            {"json": {"question": "Am I eligible?", "company_id": "kestrel"}},
+            "The 'company_id' field is not allowed.",
+        ),
+        (
+            {"json": {"question": "Am I eligible?", secret: 1}},
+            "This request contains fields that are not allowed.",
+        ),
+        (
+            {
+                "content": b"{not json " + secret.encode(),
+                "headers": {"Content-Type": "application/json"},
+            },
+            "The request body is not valid JSON.",
+        ),
+        ({"json": ["question"]}, "The request body must be a JSON object."),
+    ]
+    for kwargs, expected in cases:
+        headers = {**token_for("nimbus"), **kwargs.pop("headers", {})}
+        r = client.post("/ask", headers=headers, **kwargs)
+        assert r.status_code == 422, kwargs
+        assert r.json() == {"detail": expected}, kwargs
+        assert secret not in r.text and "loc" not in r.text and "input" not in r.text
+
+
+def test_ingest_validation_messages(client, token_for):
+    admin = token_for("nimbus", "admin")
+    r = client.post("/admin/ingest", data={}, headers=admin)
+    assert r.json() == {"detail": "The 'file' field is required."}
+    r = client.post(
+        "/admin/ingest", files={"file": ("p.md", "x")}, data={"company_id": "x"}, headers=admin
+    )
+    assert r.json() == {"detail": "The 'company_id' field is not allowed."}
 
 
 # ---------- end to end: versioning flips the answer ----------

@@ -12,6 +12,7 @@ from pydantic import BaseModel
 
 from app.auth import current_principal, require_admin
 from app.config import Settings, get_settings
+from app.errors import not_allowed, validation_message
 from app.ingest.service import (
     IngestFailed,
     InvalidDocument,
@@ -37,9 +38,7 @@ async def only_file_field(request: Request) -> None:
     """
     extra = set((await request.form()).keys()) - {"file"}
     if extra:
-        raise HTTPException(
-            status.HTTP_422_UNPROCESSABLE_CONTENT, f"Unexpected form fields: {sorted(extra)}"
-        )
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, not_allowed(extra))
 
 
 class IngestResponse(BaseModel):
@@ -72,12 +71,8 @@ def create_app(
 
     @app.exception_handler(RequestValidationError)
     async def plain_validation_error(_: Request, exc: RequestValidationError) -> JSONResponse:
-        """422 with a plain, readable message instead of FastAPI's nested error list."""
-        parts = []
-        for err in exc.errors():
-            loc = ".".join(str(x) for x in err["loc"] if x not in ("body",))
-            parts.append(f"{loc}: {err['msg']}" if loc else err["msg"])
-        return JSONResponse(status_code=422, content={"detail": "; ".join(parts)})
+        """422 with one plain sentence; never Pydantic's error list or the input (D42)."""
+        return JSONResponse(status_code=422, content={"detail": validation_message(exc.errors())})
 
     @app.get("/health")
     def health() -> dict[str, str]:
