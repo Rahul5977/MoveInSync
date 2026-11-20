@@ -9,13 +9,17 @@ rebuilt on activation, like the BM25 cache (D56). tau is not affected: it stays 
 score of the original question.
 """
 
+from __future__ import annotations
+
 import threading
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import numpy as np
 
-from app.schemas import RetrievedChunk
-from app.store.vector import VectorStore
+if TYPE_CHECKING:  # type-only: keeps this module importable alone (Docker fetch step)
+    from app.schemas import RetrievedChunk
+    from app.store.vector import VectorStore
 
 CE_REPO = "cross-encoder/ms-marco-MiniLM-L6-v2"
 CE_REVISION = "233902d25c440f23af6f7d6e94d2946bac0bee0a"

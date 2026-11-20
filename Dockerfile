@@ -12,6 +12,13 @@ RUN uv sync --frozen --no-dev --no-install-project
 # a cold download (would blow the 3 s budget) and the container works offline.
 RUN uv run --no-sync python -c "from chromadb.utils.embedding_functions import DefaultEmbeddingFunction as E; E()(['warmup'])"
 
+# D60: bake the cross-encoder (pinned HF revision, ~91 MB). The script checks SHA-256 and exits
+# non-zero on a mismatch, which fails the build. No runtime download.
+COPY app/__init__.py ./app/
+COPY app/rag/__init__.py app/rag/reranker.py ./app/rag/
+COPY scripts/__init__.py scripts/fetch_models.py ./scripts/
+RUN uv run --no-sync python -m scripts.fetch_models --dir models/ms-marco-MiniLM-L6-v2
+
 COPY app ./app
 COPY scripts ./scripts
 COPY eval ./eval
