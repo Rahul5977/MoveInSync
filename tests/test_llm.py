@@ -6,7 +6,7 @@ import httpx
 import pytest
 
 from app.config import Settings
-from app.llm.base import LLMError
+from app.llm.base import ConnectionDropped, LLMError
 from app.llm.factory import make_llm
 from app.llm.fake import ExtractiveLLM, sections_in
 from app.llm.groq import GroqLLM
@@ -78,6 +78,32 @@ def test_groq_network_error_maps_to_llm_error():
 
     with pytest.raises(LLMError, match="network"):
         _groq(handler).complete_json("s", "u", 1.0)
+
+
+@pytest.mark.parametrize("exc", [httpx.ConnectError, httpx.RemoteProtocolError, httpx.ReadError])
+def test_groq_connection_level_errors_are_connection_dropped(exc):
+    """D53: only these are retryable; the answer was never generated."""
+
+    def handler(req):
+        raise exc("Server disconnected without sending a response.", request=req)
+
+    with pytest.raises(ConnectionDropped, match=exc.__name__):
+        _groq(handler).complete_json("s", "u", 1.0)
+
+
+@pytest.mark.parametrize(
+    "handler",
+    [
+        lambda req: httpx.Response(429, json={"error": "quota"}),
+        lambda req: (_ for _ in ()).throw(httpx.ReadTimeout("slow", request=req)),
+        lambda req: httpx.Response(503),
+    ],
+    ids=["429", "timeout", "503"],
+)
+def test_groq_rate_limit_timeout_http_are_not_retryable(handler):
+    with pytest.raises(LLMError) as info:
+        _groq(handler).complete_json("s", "u", 1.0)
+    assert not isinstance(info.value, ConnectionDropped)
 
 
 def test_groq_without_key_fails_fast_without_network():

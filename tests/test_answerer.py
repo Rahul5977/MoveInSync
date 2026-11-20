@@ -7,7 +7,7 @@ from contextlib import contextmanager
 from fastapi.testclient import TestClient
 
 from app.config import Settings
-from app.llm.base import LLMError
+from app.llm.base import ConnectionDropped, LLMError
 from app.llm.fake import ExtractiveLLM, FakeLLM, sections_in
 from app.llm.groq import GroqLLM
 from app.main import create_app
@@ -174,6 +174,64 @@ def test_llm_error_is_try_again(settings, token_for):
             r = ask(client, "nimbus", ESCORT_Q, token_for)
         assert r.status_code == 503, err
         assert r.json()["status"] == "try_again" and r.json()["meta"]["llm_calls"] == 1
+
+
+# ---------- D53: one counted retry on a dropped connection ----------
+
+DROP = "network: RemoteProtocolError"
+
+
+def test_dropped_connection_retried_once_and_counted(settings):
+    llm = FakeLLM(
+        [
+            ConnectionDropped(DROP),
+            json.dumps({"covered": True, "answer": "Yes.", "cited_ids": ["nimbus_v1_s8_p0"]}),
+        ]
+    )
+    with app_with(settings, llm) as client:
+        resp, trace = _direct(client, llm, FakeClock())
+    assert resp.status == "answered" and resp.meta.llm_calls == 2
+    assert trace.retried == DROP and trace.error is None
+    assert llm.calls[0] == llm.calls[1]  # same prompt again, not a repair prompt
+
+
+def test_dropped_connection_twice_is_try_again(settings):
+    llm = FakeLLM([ConnectionDropped(DROP), ConnectionDropped(DROP)])
+    with app_with(settings, llm) as client:
+        resp, trace = _direct(client, llm, FakeClock())
+    assert resp.status == "try_again" and resp.meta.llm_calls == 2
+    assert trace.gate == "llm_error" and trace.retried == DROP
+
+
+def test_retry_uses_the_repair_slot(settings):
+    """Dropped, then invalid output: no third call; total stays <= 2."""
+    llm = FakeLLM([ConnectionDropped(DROP), "not json"])
+    with app_with(settings, llm) as client:
+        resp, trace = _direct(client, llm, FakeClock())
+    assert resp.status == "try_again" and resp.meta.llm_calls == 2 and len(llm.calls) == 2
+    assert trace.gate == "invalid_output"
+
+
+def test_no_retry_when_less_than_one_second_left(settings):
+    clock = FakeClock()
+
+    def slow_drop(system, user):
+        clock.t += 1.9  # 0.9 s left of 2.8 s
+        raise ConnectionDropped(DROP)
+
+    llm = FakeLLM(slow_drop)
+    with app_with(settings, llm) as client:
+        resp, trace = _direct(client, llm, clock)
+    assert resp.status == "try_again" and resp.meta.llm_calls == 1 and trace.retried is None
+
+
+def test_no_retry_on_rate_limit_or_timeout(settings):
+    for err in ("rate_limited", "timeout", "http_503"):
+        llm = FakeLLM([LLMError(err), "{}"])
+        with app_with(settings, llm) as client:
+            resp, trace = _direct(client, llm, FakeClock())
+        assert resp.status == "try_again" and len(llm.calls) == 1, err
+        assert trace.retried is None
 
 
 def test_no_api_key_is_try_again_not_crash(settings, token_for):

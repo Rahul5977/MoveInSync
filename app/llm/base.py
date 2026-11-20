@@ -7,6 +7,11 @@ class LLMError(Exception):
     """Any LLM failure: timeout, 429 quota, 5xx, network, missing key. Caller maps to TRY_AGAIN."""
 
 
+class ConnectionDropped(LLMError):
+    """Connection-level failure (connect error, server disconnected, read error). No answer was
+    generated, so the answerer may retry once if time allows (D53). Not raised for 429/timeouts."""
+
+
 class ModelOutputError(Exception):
     """The provider worked, but the model's output is unusable.
 

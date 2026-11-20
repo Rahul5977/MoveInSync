@@ -6,7 +6,7 @@ A missing key is NOT a startup error (D18): the app still starts, /ask returns t
 
 import httpx
 
-from app.llm.base import JsonValidationFailed, LLMError, TruncatedOutput
+from app.llm.base import ConnectionDropped, JsonValidationFailed, LLMError, TruncatedOutput
 
 GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
 
@@ -44,6 +44,8 @@ class GroqLLM:
             )
         except httpx.TimeoutException as exc:
             raise LLMError("timeout") from exc
+        except (httpx.ConnectError, httpx.RemoteProtocolError, httpx.ReadError) as exc:
+            raise ConnectionDropped(f"network: {type(exc).__name__}") from exc  # D53
         except httpx.HTTPError as exc:
             raise LLMError(f"network: {type(exc).__name__}") from exc
 

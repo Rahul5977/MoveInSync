@@ -2,6 +2,7 @@
 
   retrieve pool (active collection only) -> tau gate (0 LLM calls) -> top-k sent as data
   -> LLM call 1 -> validate JSON + citations -> [repair call 2, only if >= 1.0 s left] -> respond
+  (call 2 is instead a plain retry if call 1 lost its connection, D53; never both)
 
 Guarantees, all enforced here in code:
 - at most 2 LLM calls; at most `retrieval_top_k` (3) sections sent, so at most 3 citations
@@ -19,7 +20,7 @@ from pydantic import ValidationError
 
 from app.config import Settings
 from app.deadline import Clock, Deadline
-from app.llm.base import LLMClient, LLMError, ModelOutputError
+from app.llm.base import ConnectionDropped, LLMClient, LLMError, ModelOutputError
 from app.rag.prompt import SYSTEM_PROMPT, build_repair_prompt, build_user_prompt
 from app.rag.retriever import retrieve
 from app.schemas import (
@@ -58,6 +59,7 @@ class Trace:
     sent_ids: list[str] = field(default_factory=list)
     model_cited_ids: list[str] = field(default_factory=list)
     error: str | None = None
+    retried: str | None = None  # D53: reason for the one connection-level retry, if any
 
 
 class InvalidOutput(ValueError):
@@ -147,6 +149,12 @@ def answer_question(
             raw = llm.complete_json(SYSTEM_PROMPT, prompt, deadline.remaining())
             out = parse_llm_output(raw)
             break
+        except ConnectionDropped as exc:
+            # D53: no answer was generated; retry once (counted) if the slot and time allow.
+            if llm_calls >= 2 or deadline.remaining() < settings.repair_min_remaining_s:
+                return try_again("llm_error", str(exc))
+            trace.retried = str(exc)
+            log.info("retrying LLM call after %s", exc)
         except LLMError as exc:
             return try_again("llm_error", str(exc))
         except (InvalidOutput, ModelOutputError) as exc:
