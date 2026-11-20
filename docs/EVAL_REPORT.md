@@ -180,7 +180,60 @@ mismatch: it needs the same words. Future work, in order of expected value:
 1. **Query rewriting** (an LLM or a small synonym map turns "fined" into "penalty / deduction /
    no-show", "sat" into "Saturday") before retrieval. It costs latency, or one of the 2 LLM calls.
 2. **A stronger embedding model** (e.g. a larger or retrieval-tuned model than MiniLM) that maps
-   "fined" near "deducted from salary" on its own.
+   "fined" near "deducted from salary" on its own. Tried with bge-small: a measured negative (§3.4).
+
+### 3.4 Stronger embedding model, the experiment (D59): a measured negative
+**Setup, fixed before any result (D59).** `BAAI/bge-small-en-v1.5` (384 dims, like MiniLM), the
+official ONNX export at Hugging Face revision `5c38ec7c405ec4b44b94cc5a9bb96e735b38267a`, files
+pinned by SHA-256 and baked into the image (the build fails on a mismatch). Run with onnxruntime +
+tokenizers, no PyTorch. CLS pooling (first token), L2-normalised, 512-token cap. BGE's query
+instruction (`Represent this sentence for searching relevant passages: `) on questions only, never
+on documents. Chunking unchanged (150 words), so only one thing changed. Merge rule, set first:
+merge only if hit@3 improves with **zero** per-case regressions, all tests pass, and the τ
+re-sweep (highest τ with zero false refusals) works.
+
+**Correctness check (once, before measuring).** Our implementation against fastembed's build of the
+same model, on all 86 policy chunks + 35 eval questions: **minimum cosine 0.9999981** (required
+≥ 0.99), every vector of norm 1. The longest chunk is 174 tokens, so the 512 cap never truncates.
+
+**Retrieval, no LLM, same 35 cases** (`--ranks`, pool 8):
+
+| | hit@3 | hit@5 | hit@8 |
+|---|---|---|---|
+| MiniLM (default) | 0.893 (25/28) | 0.929 | 0.929 |
+| bge-small | **0.929** (26/28) | 0.929 | 0.929 |
+
+| Case | MiniLM rank | bge rank | |
+|---|---|---|---|
+| `saf-cutoff` ("in advance" vs "cut-off") | not in top 8 | **3** | better: one vocabulary miss fixed |
+| `kes-cancel-paraphrase` | 2 | 1 | better |
+| `saf-external-guest-no` | 2 | 1 | better |
+| `nim-weekend-typo` ("sat") | 4 | **not in top 8** | **worse** |
+| `kes-noshow-fine` ("fined") | not in top 8 | not in top 8 | same |
+| `kes-airport-vehicle-not-approval` | 2 | 2 | same |
+| the other 22 | 1 | 1 | same |
+
+**τ re-sweep, same rule.** bge gives every question a high score (0.61–0.83), off-topic ones included:
+
+| τ | False refusals (of 28) | Not-covered caught (of 7) | Universal-silence caught (of 3) |
+|---|---|---|---|
+| **0.62** ← rule's choice | 0 | 1 | **0** |
+| 0.63 | 1 (`nim-weekend-typo`) | 3 | 2 |
+| 0.67 | 5 | 4 | 3 |
+
+**τ margin** (weakest answerable minus strongest universal-silence score): MiniLM **+0.017**
+(0.389 − 0.372); bge **−0.039** (`nim-weekend-typo` 0.625 − `nim-pets` 0.664). No τ separates the
+two groups, so pets, Wi-Fi and children would each cost an LLM call instead of 0.
+
+**Decision (D59): MiniLM stays.** hit@3 improves, but there is one per-case regression, and the
+τ gate stops working (it catches 0 of 3 universal-silence cases). Both break the pre-registered
+rule. The code (`EMBEDDING_MODEL=minilm|bge-small`, the model stored per collection with a
+mismatch refusal, 10 tests) stays on branch `exp/bge-embeddings`, with the raw outputs
+`eval/retrieval_ranks_bge.json` and `eval/tau_sweep_bge.json`; it is not merged.
+
+**What it shows.** A stronger embedder does fix some vocabulary mismatch (`saf-cutoff`), but here it
+trades one miss for another and gives up the free τ gate. A better next step keeps MiniLM for the τ
+gate and changes only what is ranked: re-ranking the pool, or query rewriting (item 1 above).
 
 ## 4. Threshold τ
 Sweep over τ = 0.00 … 0.60 using retrieval only (no LLM), `uv run python -m eval.run_eval --sweep`.
