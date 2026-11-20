@@ -1,6 +1,8 @@
-# --- Markdown: ignore everything except README and policy documents ---
+# --- Markdown: ignore everything except README, shipped docs and policy documents (D1) ---
 *.md
 !README.md
+!docs/ARCHITECTURE.md
+!docs/EVAL_REPORT.md
 !data/
 !data/**/
 !data/**/*.md
