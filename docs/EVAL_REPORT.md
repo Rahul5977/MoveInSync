@@ -1,5 +1,11 @@
 # Evaluation Report — Commute Policy Assistant
 
+> **Summary.** 35 hand-written cases, real Groq run (`qwen/qwen3.8-27b`): **32/35 pass**, **0 cross-company leaks**.
+> All 3 failures are safe "not covered" refusals caused by retrieval vocabulary mismatch (§6).
+> Not-covered recall 1.00; citation and key-fact accuracy 1.00 on answered cases (§3).
+> Over HTTP in Docker, answered p95 ≈ 1 s (992 ms) against a 3 s budget; at most 2 LLM calls per question (§3.3, §5).
+> Caveats stated up front: τ was tuned on these same cases (§4), and every answer was also reviewed by hand (§10).
+
 Status: Fri 20 Nov, 19:00 IST. Numbers come from `eval/report.json` (Groq), `eval/report_fake.json`
 (keyless), `eval/tau_sweep.json` and `eval/bench.json`, all committed. Rerun with
 `uv run python -m eval.run_eval` (see README).

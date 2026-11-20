@@ -29,6 +29,32 @@ three policies from `data/policies/seed/`.
   ([incident, D45](docs/EVAL_REPORT.md#71-groq-retired-the-configured-model-fri-20-nov-1340-ist)).
 - **Reset all state** (back to v1 everywhere): `docker compose down -v`.
 
+## For reviewers: where to look
+
+Each claim points to the evidence (tests in `tests/`, sections in [docs/EVAL_REPORT.md](docs/EVAL_REPORT.md)).
+
+- **Cross-company isolation.** Tests `test_cross_company_retrieval_never_leaks`,
+  `test_cross_company_question_sees_only_own_policy`, `test_client_cannot_override_company`,
+  `test_admin_cannot_ingest_another_companys_document`, `test_hybrid_isolation_no_foreign_chunks`.
+  Eval: **0 leaks** across 35 cases, including 3 cross-company traps (`kes-asks-nimbus-escort`,
+  `nim-saffron-cap-trap`, `nim-escort-10pm-trap`), EVAL_REPORT §3.
+- **Atomic versioning.** `test_failed_ingest_leaves_old_version` (forced mid-ingest failure),
+  `test_crash_mid_ingest_reconciled_on_restart`, `test_restart_keeps_v2`,
+  `test_ask_flips_after_v2_ingest`; the v1 → v2 switch is steps 8–10 of the demo video.
+- **Model output is untrusted.** Strict JSON with one repair, then `try_again`
+  (`test_bad_json_then_repair_succeeds`, `test_bad_json_twice_is_try_again`); only cited ids we
+  sent are kept (`test_unknown_and_foreign_citations_dropped`,
+  `test_only_invalid_citations_becomes_not_covered`, `test_citations_deduplicated_and_capped_at_three`);
+  planted instructions stay data (`test_document_injection_stays_inside_data_block`).
+- **A real incident handled.** Groq retired `llama-3.1-8b-instant` mid-build; the system degraded
+  to `try_again` as designed and was fixed with one setting (EVAL_REPORT §7.1).
+- **Honest evaluation.** τ tuned on the same cases, stated with its 0.017 margin (§4); every
+  answer reviewed by hand, 0 disagreements (§10); 2 held-out injection cases added before the
+  prompt change ran (§3.1); the default retrieval mode rule fixed before measuring, and the BM25
+  regression (`nim-weekend-typo` 4 → 8) reported, so vector stays the default (§3.3).
+- **Known failures: 3/35, all safe refusals** ("not covered", never a wrong or foreign rule),
+  each traced to a vocabulary mismatch with its retrieval rank (§6).
+
 ## 2. Tokens
 
 A dev token issuer stands in for the company's identity provider. The company comes **only** from
