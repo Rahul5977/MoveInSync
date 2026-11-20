@@ -24,9 +24,30 @@ class Settings(BaseSettings):
     data_dir: Path = Path("var")
     policies_dir: Path = Path("data/policies")
 
+    # Server-side allow-list of tenants: company_id -> display name in the policy title.
+    # Collection names are only ever built from these ids.
+    companies: dict[str, str] = {
+        "nimbus": "Nimbus Software",
+        "kestrel": "Kestrel Bank",
+        "saffron": "Saffron Pharma",
+    }
+
+    # MiniLM truncates at 256 tokens; 150 words + context header stays safely under it.
+    chunk_max_words: int = 150
+    ingest_batch_size: int = 8
+    max_document_chars: int = 200_000
+
     @property
     def chroma_dir(self) -> Path:
         return self.data_dir / "chroma"
+
+    @property
+    def seed_dir(self) -> Path:
+        return self.policies_dir / "seed"
+
+    @property
+    def updates_dir(self) -> Path:
+        return self.policies_dir / "updates"
 
     @property
     def registry_path(self) -> Path:
