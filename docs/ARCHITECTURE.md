@@ -1,6 +1,6 @@
 # Architecture — Commute Policy Assistant (Case Study B)
 
-Status: **v3, reflects the code at commit `d326da9`** (updated Fri 20 Nov, 12:45 IST).
+Status: **v3, reflects the code at commit `2a68e87`** (updated Fri 20 Nov, 13:30 IST).
 Changes from v2 are marked **[v3]**. Build status per item: ✅ built and tested · 🔜 planned · ❓ open.
 Any further change goes in the Decision Log first.
 
@@ -145,12 +145,14 @@ Rules:
 | Valid JWT, unknown `company_id` or unknown `role` | 403 | ✅ |
 | Employee token on `/admin/*` | 403 | ✅ |
 | Body has extra fields (e.g. `company_id`) | 422 (`extra="forbid"`) | ✅ |
-| Question empty or > 500 chars | 422 with a plain message (whitespace trimmed first; D42) | ✅ |
+| Question empty or > 500 chars | 422 `{"detail": "The question must be between 3 and 500 characters."}` (whitespace trimmed first) | ✅ |
+| Any other bad body (missing/extra field, not JSON, not an object) | 422 with one plain sentence of ours; never Pydantic's list or the input (D42) | ✅ |
 | Company has no active policy | `not_covered` + "contact the transport desk", 0 LLM calls | ✅ |
 | Best similarity < τ | `not_covered`, 0 LLM calls | ✅ |
 | LLM says `covered=false` | `not_covered` + desk pointer (fixed wording, not model text) | ✅ |
 | LLM timeout / 5xx / 429 quota / no API key | `try_again`, HTTP 503, never a half answer | ✅ |
 | LLM returns invalid JSON | 1 repair call if time allows; still bad → `try_again` (`covered=true` + empty answer also counts as invalid; D39) | ✅ |
+| LLM hits `max_tokens` (`finish_reason=length`) | Treated as invalid output → repair if time allows, else `try_again` (D41) | ✅ |
 | LLM cites a chunk it wasn't given | Citation dropped (also deduplicated, capped at 3); if none left → `not_covered` | ✅ |
 | Ingest: bad header / wrong company / empty / too large / not UTF-8 / extra form field | **[v3] 422** (D32), nothing changes | ✅ |
 | Ingest: version ≤ active | 409, nothing changes | ✅ |
@@ -188,7 +190,15 @@ LLM output schema (Groq JSON mode, `temperature=0`, `max_tokens=300`), validated
 ## 8. Running without a key
 - `LLM_PROVIDER=groq|fake` (env, default `groq`; D38). `.env.example` committed; `.env` never. ✅
 - `docker compose up` must start and pass `/health` with **no** `GROQ_API_KEY`. If `groq` is
-  selected and the key is missing, the app logs one warning and `/ask` returns `try_again`. ✅
+  selected and the key is missing, the app logs one WARNING at startup and `/ask` returns `try_again`. ✅
+- `/health` → `{"status": "ok", "llm": {"provider": "groq"|"fake", "ready": bool}}` (D38). `ready` is
+  false when a call is certain to fail (no key). No tenant data (D35). ✅
+- `eval/run_eval.py` without a key defaults to the extractive fake, labels every row and the report
+  with the provider, prints a banner, and writes `eval/results_fake.jsonl`; only a groq run writes the
+  committed `eval/results.jsonl` (D38e). 🔜 Phase 4
+- Tests ignore the developer's `.env` (`Settings(_env_file=None, llm_provider="fake")`) and the default
+  test app uses a no-reply fake, so no test can reach Groq or pick up a local τ/secret (D44). Verified with
+  a hostile `.env` (fake key, other JWT secret, τ = 0.99): 86/86 pass. ✅
 - `FakeLLM` modes: `scripted` ✅ (unit tests: good JSON, bad JSON, timeout, injection obedience) and
   `extractive` ✅ (eval without a key: cites the top chunk and returns its first sentence). It never
   returns `covered=false`, so keyless runs exercise only the τ gate; the LLM gate needs Groq.
@@ -197,7 +207,7 @@ LLM output schema (Groq JSON mode, `temperature=0`, `max_tokens=300`), validated
   runtime download; v2 ingested in the container survives `docker compose restart`. ✅
 
 ## 9. Testing strategy
-Current: **40 tests, all passing, ~6 s**. Seed policies are embedded once per session into a template;
+Current: **86 tests, all passing, ~9 s**. Seed policies are embedded once per session into a template;
 each test gets a private copy (`settings` fixture). Startup/restart tests use an empty `cold_settings`.
 
 - **Unit**
@@ -388,12 +398,13 @@ Key sections for the eval:
 | D33 | **[v3]** `role` claim required (missing → 401, no silent default to employee); unknown company/role → 403; auth reads the app's own settings, not the global | Agreed, ✅ | 401 = not authenticated, 403 = authenticated but not allowed; tests and server can't disagree on secrets |
 | D34 | **[v3]** Reconciler also drops leftover collections of `failed` rows (cleanup that failed at runtime) and never touches the live collection | Agreed, ✅ | Covers a crash during the except-block cleanup too |
 | D35 | **[v3]** `/health` stays plain `{"status":"ok"}`; per-company versions only via admin-only `/admin/policy` | Agreed, ✅ | Unauthenticated endpoint must not reveal tenant names |
-| D36 | **[v3]** Escape `&`, `<`, `>` in policy text and question inside prompt blocks; `html.unescape()` the model's answer before returning it | Agreed, 🔜 amendment | A document or user can't close a block and forge a section; users never see `&amp;` |
-| D37 | **[v3]** `answer_question` returns `(AskResponse, Trace)`; the route returns only `AskResponse`; Trace (gate, best_score, retrieved/sent/model-cited ids, error) is logged and used by eval | Agreed, ✅ (+ test that `/ask` JSON has no trace fields 🔜) | Eval needs internals without leaking them in the API |
-| D38 | **[v3]** `LLM_PROVIDER` defaults to `groq`; without a key the app starts and `/ask` returns try_again (503). `/health` returns `{"status":"ok","llm":{"provider":…,"ready":bool}}`; one WARNING at startup if not ready | Agreed, 🔜 amendment | Graders see at a glance why answers are try_again; provider/readiness reveals no tenant data (D35 still holds) |
+| D36 | **[v3]** Escape `&`, `<`, `>` in policy text and question inside prompt blocks; `html.unescape()` the model's answer before returning it | Agreed, ✅ | A document or user can't close a block and forge a section; users never see `&amp;` |
+| D37 | **[v3]** `answer_question` returns `(AskResponse, Trace)`; the route returns only `AskResponse`; Trace (gate, best_score, retrieved/sent/model-cited ids, error) is logged and used by eval | Agreed, ✅ (+ no-trace-fields test ✅) | Eval needs internals without leaking them in the API |
+| D38 | **[v3]** `LLM_PROVIDER` defaults to `groq`; without a key the app starts and `/ask` returns try_again (503). `/health` returns `{"status":"ok","llm":{"provider":…,"ready":bool}}`; one WARNING at startup if not ready | Agreed, ✅ | Graders see at a glance why answers are try_again; provider/readiness reveals no tenant data (D35 still holds) |
 | D38e | **[v3]** `eval/run_eval.py`: no `GROQ_API_KEY` → extractive fake by default; provider recorded in every row's `notes` and in `report.json`; banner printed; fake runs write `eval/results_fake.jsonl`; only a groq run writes `eval/results.jsonl` (the committed submission file) | Agreed, 🔜 Phase 4 | A keyless run can never overwrite or masquerade as the real submission |
 | D39 | **[v3]** Strip whitespace first; `covered=true` with an empty answer = invalid output → repair call if time allows, else try_again | Agreed, ✅ | Never show an empty "answer" |
-| D40 | **[v3]** Not-covered and try-again wording is fixed text in code; if `covered=false` the model's text is discarded entirely | Agreed, ✅ (+ leak test 🔜) | Model can't word a refusal into a guess |
-| D41 | **[v3]** Groq: `temperature=0`, `max_tokens=300`, per-call timeout = min(remaining deadline, 2.5 s); `finish_reason == "length"` = invalid output (→ repair / try_again) | Agreed, 🔜 amendment | Determinism; bounded latency; a truncated JSON is never half-parsed |
-| D42 | **[v3]** Validation errors → 422 with JSON body `{"detail": "<one plain sentence>"}` written by us; never echo Pydantic's error list or the input | Agreed, 🔜 amendment | Consistent with other errors; no reflection of user input |
+| D40 | **[v3]** Not-covered and try-again wording is fixed text in code; if `covered=false` the model's text is discarded entirely | Agreed, ✅ (+ leak test ✅) | Model can't word a refusal into a guess |
+| D41 | **[v3]** Groq: `temperature=0`, `max_tokens=300`, per-call timeout = min(remaining deadline, 2.5 s); `finish_reason == "length"` = invalid output (→ repair / try_again) | Agreed, ✅ | Determinism; bounded latency; a truncated JSON is never half-parsed |
+| D42 | **[v3]** Validation errors → 422 with JSON body `{"detail": "<one plain sentence>"}` written by us; never echo Pydantic's error list or the input | Agreed, ✅ | Consistent with other errors; no reflection of user input |
 | D43 | **[v3]** LLM output validated with Pydantic `strict=True`, `extra="ignore"` | Agreed, ✅ | No silent coercion of malformed model output |
+| D44 | **[v3]** Tests never read `.env`: `test_settings()` = `Settings(_env_file=None, llm_provider="fake", groq_api_key="")`; default test app uses a no-reply `FakeLLM([])`; tokens minted with the same settings | Implemented, to review | Once a real key is in `.env`, no test may call Groq or depend on local τ/secret values |
