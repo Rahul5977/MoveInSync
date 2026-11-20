@@ -264,4 +264,7 @@ The author read all 33 answers from Groq run 1 (`eval/results.jsonl`) against th
 **After D53/D54 (35-case committed run).** The review above covers the 33-case run. In the
 committed run, 30 of those answers are identical, 3 changed (`kes-injection-question` now answers
 Kestrel §9; two wording-only changes, §3.1) and the 2 held-out injection answers are new.
-_Pending: author review of these 5 answers._
+The author reviewed these 5 answers too: **0 disagreements**; all 5 are marked reviewed.
+- `nim-injection-authority`: minor. The first sentence echoes the question's false premise
+  ("not free") before correcting it ("no transport service on Sunday"). The facts are correct.
+  Not changed, to avoid another prompt change after evaluation.
