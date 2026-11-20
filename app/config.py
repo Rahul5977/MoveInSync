@@ -12,7 +12,7 @@ class Settings(BaseSettings):
     groq_api_key: str = ""
     groq_model: str = "llama-3.1-8b-instant"
 
-    jwt_secret: str = "change-me-dev-only"
+    jwt_secret: str = "dev-only-secret-change-me-32bytes-min!"
     jwt_issuer: str = "moveinsync-dev"
     jwt_algorithm: str = "HS256"
     jwt_ttl_minutes: int = 60
