@@ -108,6 +108,67 @@ deadline is left, and the retry **counts as an LLM call** (it uses the repair sl
 It fired live in the committed run: `nim-nightdrop-not-escort` hit a `ConnectError`, was retried,
 and answered correctly with 2 LLM calls (row `notes`: `retried=network: ConnectError`).
 
+### 3.3 Hybrid retrieval, the bonus (D55–D57): vector vs hybrid
+**Setup, fixed before any result was seen (D55):** lowercase `\w+` tokens; NLTK English stopwords
+removed; Snowball English stemmer; the index holds exactly the embedded text (context header +
+body); Okapi BM25 (k1 1.5, b 0.75). Vector and BM25 each fetch their own top 8 from the active
+collection, merged with RRF (k = 60), top 3 sent, company/version check on the merged list (D56).
+τ stays on the best vector score. **Default-mode rule, set before measuring (D57):** hybrid becomes
+the default only if retrieval improves with zero per-case regressions.
+
+**Primary (retrieval only, deterministic, 28 answerable cases):**
+
+| Mode | hit@3 | hit@5 | hit@8 | Files |
+|---|---|---|---|---|
+| vector | 0.893 | **0.929** | 0.929 | `eval/retrieval_ranks.json` |
+| hybrid | 0.893 | 0.893 | **0.964** | `eval/retrieval_ranks_hybrid.json` |
+
+Per-case rank changes (25 of 28 unchanged):
+
+| Case | Vector rank | Hybrid rank | Effect |
+|---|---|---|---|
+| `saf-cutoff` "How far in advance do I need to **request** a cab?" | not in top 8 | **6** | better, still not sent (top 3) |
+| `nim-weekend-typo` "can i get cab on **sat**?" | **4** | 8 | **worse** |
+| `saf-external-guest-no` | 2 | **1** | better (already sent) |
+| `kes-noshow-fine` "Will I be **fined** for **missing** my cab?" | not in top 8 | not in top 8 | unchanged |
+
+Why: after stemming, the questions become `fine miss cab`, `far advanc need request cab` and
+`get cab sat`. §15 never says "fine" or "miss" (it says "no-show", "deducted"), so BM25 can't find
+it. "request" matches §5's "requests", which lifts `saf-cutoff` into the pool but not into the
+top 3. "sat" is not "saturday" after stemming, so BM25 adds nothing for §9, and sections that both
+lists like (via "cab") push §9 from 4 to 8. No case where BM25 put the expected section in the
+top 3 but τ refused it.
+
+**Secondary (one Groq run, hybrid, `eval/results_hybrid.jsonl`):** **32/35**, identical status and
+citations to the vector run on every case; same 3 failures; 0 leaks; max 1 LLM call.
+
+**Latency.** The planned Groq bench (6 s, then 12 s throttle) could not run: Groq's **daily**
+token limit (200,000 TPD on this key) was used up by the day's evals (see §8), so every request got
+a 429. The LLM call is identical in both modes; only retrieval differs. So the difference was
+measured directly: same `scripts/bench.py`, Docker, end to end over HTTP, keyless fake LLM, 60
+requests per mode (`eval/bench_fake_vector.json`, `eval/bench_fake_hybrid.json`):
+
+| Mode (HTTP, fake LLM) | p50 | p95 | max |
+|---|---|---|---|
+| vector | 123 ms | 207 ms | 231 ms |
+| hybrid | 120 ms | 138 ms | 179 ms |
+
+**BM25 + RRF adds no measurable latency** (an in-memory index of ~22 chunks per company; the
+difference is noise). With Groq, the in-process eval gave LLM-case p50/p95 of 469/722 ms (vector)
+and 467/830 ms (hybrid); that gap comes from provider variance, since the prompts are the same.
+
+**Decision (D57): vector stays the default.** Hybrid doesn't improve hit@3 (what reaches the
+model), and it has one regression (`nim-weekend-typo` 4 → 8, hit@5 0.929 → 0.893). It stays as a
+documented option (`RETRIEVAL_MODE=hybrid`), tested for isolation and versioning.
+
+**Honest conclusion.** The two remaining "not in the pool" misses are **vocabulary mismatch**
+("fined" vs "deducted", "in advance" vs "cut-off"), and lexical search doesn't fix vocabulary
+mismatch: it needs the same words. Future work, in order of expected value:
+1. **Query rewriting** (an LLM or a small synonym map turns "fined" into "penalty / deduction /
+   no-show", "sat" into "Saturday") before retrieval. It costs latency, or one of the 2 LLM calls.
+2. **A stronger embedding model** (e.g. a larger or retrieval-tuned model than MiniLM) that maps
+   "fined" near "deducted from salary" on its own.
+
 ## 4. Threshold τ
 Sweep over τ = 0.00 … 0.60 using retrieval only (no LLM), `uv run python -m eval.run_eval --sweep`.
 
@@ -225,6 +286,9 @@ production version would add a startup probe that checks the configured model ex
 - **Free-tier provider**: 429s appear after ~20 requests a minute, and the configured model was
   retired mid-project (§7.1). Production would need a paid tier, retries with backoff at the gateway,
   and a startup model probe.
+- **Free-tier quota**: this key allows 8,000 tokens/minute and 200,000 tokens/day; one `/ask`
+  uses ~1,200–1,600 tokens, so ~5 requests/minute and ~130 a day. Today's evals and benches used
+  the daily quota (all requests 429 by 19:30 IST), which blocked the Groq latency bench for hybrid.
 - **429s aren't retried** in the API (by design, D53): under free-tier limits some users get `try_again`.
 - **English-only embeddings** (MiniLM, 256 tokens); abbreviations like "sat" are weak.
 - **Single process**: the ingest lock is per-process (one uvicorn worker).
