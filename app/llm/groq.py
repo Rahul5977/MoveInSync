@@ -12,11 +12,13 @@ GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
 
 
 class GroqLLM:
-    def __init__(self, api_key: str, model: str, max_timeout_s: float) -> None:
+    def __init__(
+        self, api_key: str, model: str, max_timeout_s: float, client: httpx.Client | None = None
+    ) -> None:
         self._api_key = api_key
         self._model = model
         self._max_timeout_s = max_timeout_s
-        self._client = httpx.Client()
+        self._client = client or httpx.Client()  # injectable for tests (httpx.MockTransport)
 
     def complete_json(self, system: str, user: str, timeout_s: float) -> str:
         if not self._api_key:
