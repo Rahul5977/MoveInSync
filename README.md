@@ -86,7 +86,7 @@ cover this…") or `try_again` (HTTP 503, e.g. no key or the LLM provider is dow
 
 **With Docker only:**
 ```bash
-docker compose --profile test run --rm tests                                  # 138 tests, keyless
+docker compose --profile test run --rm tests                                  # 140 tests, keyless
 docker compose run --rm api uv run --no-sync python -m eval.run_eval          # eval (see below)
 ```
 
@@ -183,6 +183,6 @@ app/
 data/policies/       seed/<company>/v1.md (loaded at start), updates/nimbus/v2.md (upload demo)
 eval/                cases.jsonl, run_eval.py, scoring.py, results.jsonl (submission), reports
 scripts/             issue_token.py, bench.py
-tests/               138 tests, keyless
+tests/               140 tests, keyless
 docs/                ARCHITECTURE.md (design + decision log), EVAL_REPORT.md
 ```
