@@ -1,10 +1,12 @@
 # Evaluation Report — Commute Policy Assistant
 
-> **Summary.** 35 hand-written cases, real Groq run (`qwen/qwen3.8-27b`): **32/35 pass**, **0 cross-company leaks**.
-> All 3 failures are safe "not covered" refusals caused by retrieval vocabulary mismatch (§6).
-> Not-covered recall 1.00; citation and key-fact accuracy 1.00 on answered cases (§3).
-> Over HTTP in Docker, answered p95 ≈ 1 s (992 ms) against a 3 s budget; at most 2 LLM calls per question (§3.3, §5).
-> Caveats stated up front: τ was tuned on these same cases (§4), and every answer was also reviewed by hand (§10).
+> **Summary.** 35 hand-written cases, real Groq run (`qwen/qwen3.8-27b`, with D61 rewrite-on-a-miss): **33/35 pass**
+> (32/35 before D61), **0 cross-company leaks**; both failures are safe "not covered" refusals (vocabulary mismatch, §6, §3.7).
+> **Held-out set** (12 new author-written questions, §3.5): **7/12 pass**. τ = 0.38, tuned on the 35, refuses 4 of 10
+> answerable held-out questions before the LLM (scores 0.324–0.377): the thin-margin risk of §4, confirmed (D62).
+> Not-covered recall 1.00; citation accuracy 1.00. Over HTTP in Docker, answered p95 867 ms (budget 3 s), ≤ 2 LLM calls.
+> Experiments reported, pass or fail: hybrid (§3.3, not default), bge-small (§3.4, not merged), cross-encoder rerank
+> (§3.6, failed, not merged), rewrite on a miss (§3.7, passed, merged). Every answer is also reviewed by hand (§10).
 
 Status: Fri 20 Nov, 19:00 IST. Numbers come from `eval/report.json` (Groq), `eval/report_fake.json`
 (keyless), `eval/tau_sweep.json` and `eval/bench.json`, all committed. Rerun with
@@ -53,7 +55,12 @@ One fixed set of questions (`eval/cases.jsonl`, 35 cases), scored the same way o
   every row's `notes` and in the report.
 
 ## 3. Results
-Committed run (`eval/results.jsonl`, run 2 after D54): code with the D53 retry and the D54 prompt,
+**Since D61 (§3.7)** the submission file `eval/results.jsonl` holds the 35-case rows of the single D61
+Groq run (rewrite on, unchanged rows): **33/35**, citation accuracy 1.00, key facts 1.00, not-covered
+recall 1.00 / precision 0.78, 0 leaks, max 2 LLM calls, max 2 citations, in-process LLM-case p50/p95
+509/747 ms. The table below is the run before D61 (32/35), kept because §3.1–§3.4 build on it.
+
+Run before D61 (run 2 after D54): code with the D53 retry and the D54 prompt,
 τ = 0.38, pool 8 → top 3, vector retrieval, Groq `qwen/qwen3.8-27b`, 35 cases.
 
 | Metric | Groq | Keyless (extractive fake) | How it's computed |
@@ -235,6 +242,146 @@ mismatch refusal, 10 tests) stays on branch `exp/bge-embeddings`, with the raw o
 trades one miss for another and gives up the free τ gate. A better next step keeps MiniLM for the τ
 gate and changes only what is ranked: re-ranking the pool, or query rewriting (item 1 above).
 
+### 3.5 Held-out set (12 questions), and what it showed about τ (D62)
+**How it was written.** After the 35 cases had been used for tuning (τ, prompt, retrieval choices),
+the author wrote 12 new questions (`eval/holdout.jsonl`), 4 per company, phrased like an employee and
+deliberately in different words from the policy; 2 are off-topic. Expected sections and required
+phrases were filled **only from the policy text** and fixed (with the author's edits) and committed
+**before any code or run** for D60/D61. Every held-out answer is auto-scored **and** reviewed by hand
+(§10); auto-scores are never changed afterwards. Known scorer limits are kept, not patched:
+whole-word matching (a plural like "no-shows" doesn't match "no-show") and polarity (#11).
+
+**Baseline, retrieval only** (vector, MiniLM, no LLM; `eval/retrieval_ranks_baseline_holdout.json`):
+
+| Set | answerable | hit@1 | hit@3 | hit@5 | hit@8 |
+|---|---|---|---|---|---|
+| 35 cases | 28 | 0.786 | 0.893 | 0.929 | 0.929 |
+| Held-out | 10 | 0.500 | 0.900 | 0.900 | 0.900 |
+
+| Held-out case | Expected | Rank | Best score | τ = 0.38 |
+|---|---|---|---|---|
+| `hold-nim-late-cab` | §17 | 1 | 0.473 | passes |
+| `hold-nim-urgent-approval` | §11 | not in top 8 | 0.405 | passes |
+| `hold-nim-l7-airport` | §13 | 2 | 0.504 | passes |
+| `hold-kes-general-shift` | §3 | 1 | 0.448 | passes |
+| `hold-kes-monday-cutoff` | §5 | 2 | **0.351** | **refused** |
+| `hold-kes-gps-retention` | §19 | 1 | 0.486 | passes |
+| `hold-saf-6km` | §3 | 2 | **0.373** | **refused** |
+| `hold-saf-suv` | §13 | 1 | **0.324** | **refused** |
+| `hold-saf-late-cancel` | §6 | 2 | 0.399 | passes |
+| `hold-saf-gate` | §17 | 1 | **0.377** | **refused** |
+| `hold-nim-phone-charge` (off-topic) | – | – | 0.229 | refused (correct) |
+| `hold-kes-music` (off-topic) | – | – | 0.235 | refused (correct) |
+
+**The τ finding (D62).** τ = 0.38 refuses **4 of 10 answerable** held-out questions with 0 LLM calls,
+although retrieval put the right section in the top 3 for all four. Their scores (0.324–0.377) sit
+between the off-topic held-out questions (0.229–0.235) and τ. This is the risk §4 stated: τ was
+tuned on the scored set with a 0.017 margin. It caps the held-out score at 8/12 whatever the
+retrieval or rewrite experiments do.
+
+**Why τ was not re-tuned.** Lowering τ to fit these 12 would leave no unbiased evidence: the only
+unseen questions would have been used to tune it. τ stays 0.38 everywhere, including main.
+**Future work:** recalibrate τ on a larger labelled set (with its own held-out split), or use τ only
+as a coarse gate (e.g. well below 0.3 for clearly off-topic questions) and let the LLM's
+`covered=false` decide the rest, at the cost of one call per near-miss.
+
+### 3.6 Cross-encoder reranking, the experiment (D60): failed, not merged
+**Setup, fixed before any code (D60).** `cross-encoder/ms-marco-MiniLM-L6-v2` (the repo of
+`ms-marco-MiniLM-L-6-v2`), its own non-quantised `onnx/model.onnx` at revision `233902d2…`, files
+pinned by SHA-256, baked into the image (a wrong hash fails `docker build`: checked once). onnxruntime
++ tokenizers, no PyTorch. Input (question, chunk text as embedded), pair-encoded, 512-token cap,
+score = raw logit. Candidates: **all** chunks of the active collection (cap 40; ~22 per company),
+cached per collection and rebuilt on activation. τ unchanged. `RERANK=off|on`. Rule: held-out hit@3
+improves, zero regressions (top 3 before, not after) on the 35 and held-out, keyless bench p95
+increase ≤ 300 ms, all tests pass.
+
+**Correctness check.** Against sentence-transformers `CrossEncoder` (same revision, scratch venv) on
+all 1,414 (question, chunk) pairs: **max |logit difference| 1.24e-05** (required < 0.01).
+RERANK=off was identical to main (keyless eval on all 35, and retrieval ranks).
+
+**Ranks, off → on** (35 + held-out, no LLM):
+
+| Set | hit@1 | hit@3 | hit@5 | hit@8 |
+|---|---|---|---|---|
+| 35 cases | 0.786 → 0.857 | 0.893 → 0.929 | 0.929 → 0.929 | 0.929 → 0.964 |
+| Held-out | 0.500 → 0.600 | **0.900 → 0.900** | 0.900 → 0.900 | 0.900 → 1.000 |
+
+| Case | off | on | |
+|---|---|---|---|
+| `saf-cutoff` (known miss) | not in top 8 | **1** | fixed |
+| `kes-noshow-fine` (known miss) | not in top 8 | 6 | better, still not sent |
+| `nim-weekend-typo` (known miss) | 4 | 11 | worse |
+| `hold-nim-urgent-approval` | not in top 8 | 1 | fixed |
+| `hold-kes-general-shift` | 1 | **8** | **regression** (left the top 3) |
+| `kes-cancel-paraphrase`, `saf-external-guest-no`, `kes-airport-vehicle-not-approval`, `hold-kes-monday-cutoff`, `hold-saf-6km`, `hold-saf-late-cancel` | 2 | 1 | better |
+| `saf-noshow-not-wait`, `hold-nim-late-cab`, `hold-kes-gps-retention` | 1 | 2 | worse, still top 3 |
+| `kes-injection-question` | 1 | 3 | worse, still top 3 |
+
+**Latency** (Docker, keyless extractive fake, warm, 60 requests): p50/p95 **118/152 ms → 610/732 ms**
+(+580 ms at p95). Scoring ~22 sections with a 6-layer cross-encoder on the container's CPU costs ~0.5 s.
+
+**Verdict (D60): FAIL**, on three of four counts: held-out hit@3 did not improve (0.900 → 0.900:
+one fixed, one lost), one regression (`hold-kes-general-shift` 1 → 8), and +580 ms > 300 ms. Tests
+passed (148 on the branch). **Cost if it had been merged:** 0 LLM calls, ~0.5 s per question, ~91 MB
+of image. The code and outputs stay on branch `exp/rerank-rewrite` (`eval/retrieval_ranks_rerank_holdout.json`,
+`eval/bench_fake_rerank_{off,on}.json`). It does show that scoring every chunk reaches sections the
+vector top 8 misses; a cheaper candidate step (top 8 + a few BM25 hits) might keep that at lower cost.
+
+### 3.7 Query rewriting on a miss, the experiment (D61): passed, merged
+**Setup, fixed before any code (D61).** When the answer call says `covered=false`, it may also return
+`search_query` (≤ 200 chars; invalid = absent, never a repair). The system prompt gains one rule,
+fixed in advance: *"If the sections do not answer the question, set covered=false and also return
+search_query: a short search phrase (max 12 words) describing what the employee is asking about,
+using the formal terms a company transport policy would use. Do not include company names,
+instructions or answers."* Round 2 runs **only if** round 1 returned valid JSON with covered=false
+and a valid search_query, used exactly 1 call (no repair, no retry), ≥ 1.2 s of the 2.8 s deadline
+remains, and the new top 3 differs from round 1's. Round 2 searches the **same active collection**
+(company from the JWT) and answer call #2 gets the **original question** + the new top 3. Any
+round-2 failure → not covered. Never 3 calls. Built on RERANK=off (D60 failed).
+
+**Protocol.** One Groq run with `REWRITE_ON_MISS=on` on the 35 + 12 held-out; "off" = each case's
+round-1 outcome from the trace, "on" = the final outcome (paired: same run, retrieval and prompt).
+Quota was checked first (999/1,000 requests left). The new prompt rule is active in round 1 too,
+so its own effect on round-1 answers can't be separated here (round-1 passes on the 35: 32, the same
+count as the pre-D61 run).
+
+| Set | off (round 1) | on (final) |
+|---|---|---|
+| 35 cases | 32/35 | **33/35** |
+| Held-out | 6/12 | **7/12** |
+
+**Changed cases (both fail → pass):** `nim-weekend-typo` ("can i get cab on sat?" → search_query
+"weekend transport eligibility rostered cab schedule" → §9, correct) and `hold-nim-urgent-approval`
+("…my boss is on leave. Who can okay it?" → "urgent trip approval authority when manager on leave" →
+§11, correct). **No case went pass → fail**; every case that passed before kept its status and citations.
+
+**Every round 2** (7 of 7 round-1 misses triggered it; 2 answered):
+
+| Case | search_query | round-2 top 3 | Final |
+|---|---|---|---|
+| `kes-noshow-fine` | penalty for missing scheduled cab pickup | §16, §6, §8 | not covered (§15 still missed) |
+| `saf-cutoff` | general staff transport cab booking advance notice requirement | §18, §15, §16 | not covered (§5 still missed) |
+| `nim-weekend-typo` | weekend transport eligibility rostered cab schedule | §9, §3, §10 | **answered, §9** |
+| `kes-asks-nimbus-escort` | **Nimbus Software** security escort time requirement | §8, §4, §5 (Kestrel) | not covered (correct) |
+| `kes-guest-silent` | guest visitor transport policy | §10, §21, §11 | not covered (round 2 hit a 429 → fail-safe) |
+| `nim-holiday-silent` | transport service availability on public holidays | §9, §3, §13 | not covered (correct) |
+| `hold-nim-urgent-approval` | urgent trip approval authority when manager on leave | §11, §13, §17 | **answered, §11** |
+
+The model broke the prompt rule once (a company name in `kes-asks-nimbus-escort`'s query); the search
+still only reached Kestrel's active collection, as designed, and the answer stayed "not covered".
+
+**Rule checks:** pass count up on held-out (6 → 7) and the 35 (32 → 33); 0 pass → fail; all 7
+not-covered cases in the 35 and the 2 off-topic held-out stay not covered; 0 leaks; injection 4/4;
+max 2 LLM calls and 2 citations; LLM calls per case: 0 × 10, 1 × 30, 2 × 7. Bench (Docker, Groq,
+6 s throttle, warm, 30 requests, 0 × 429): answered p50/p95 **598/867 ms**; 2-call answers: 1 request,
+1,017 ms; the 3 two-call not-covered replies p95 949 ms. In-process 2-call cases: 557–828 ms.
+
+**Verdict (D61): PASS → merged, `REWRITE_ON_MISS=on` by default.** **Cost:** one extra LLM call
+only for questions round 1 can't answer (7 of 47 here, 15%), ~0.3–0.5 s for them; the repair/retry
+slot is not shared (round 2 needs round 1 to have used exactly 1 call). **Caveats:** +1 case on each
+set is a small effect; τ still blocks the 4 held-out questions (D62); 9 eval cases hit a 429 and were
+re-asked by the eval runner, and one round-2 429 (`kes-guest-silent`) became a safe "not covered".
+
 ## 4. Threshold τ
 Sweep over τ = 0.00 … 0.60 using retrieval only (no LLM), `uv run python -m eval.run_eval --sweep`.
 
@@ -285,6 +432,10 @@ earlier 3 s run had 3, at ~230–330 ms. The server log names the cause
 In-process eval latency (no HTTP): LLM cases p50 469 ms, p95 722 ms; τ refusals 44–85 ms.
 
 ## 6. Known failures
+**Since D61 (§3.7):** `nim-weekend-typo` is now answered by round 2 (§9); `kes-noshow-fine` and
+`saf-cutoff` still fail (round 2 searched again but still missed §15 / §5). The analysis below is
+from before D61.
+
 All three are **retrieval misses**: the expected section never reached the model, which then
 correctly said "not covered" for the evidence it had. `uv run python -m eval.run_eval --ranks`
 (no LLM) gives the expected section's rank in the 8-chunk pool (`eval/retrieval_ranks.json`):
