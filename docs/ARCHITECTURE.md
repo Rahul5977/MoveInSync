@@ -1,6 +1,6 @@
 # Architecture — Commute Policy Assistant (Case Study B)
 
-Status: **v3, reflects the code at commit `5a6b6fd`** (updated Fri 20 Nov, 11:30 IST).
+Status: **v3, reflects the code at commit `4f6ca9f`** (updated Fri 20 Nov, 12:00 IST).
 Changes from v2 are marked **[v3]**. Build status per item: ✅ built and tested · 🔜 planned · ❓ open.
 Any further change goes in the Decision Log first.
 
@@ -21,7 +21,7 @@ Quality is measured by a fixed, rerunnable evaluation set.
 | ≤ 3 cited chunks | Retrieve a candidate pool of 8, send the top 3 to the LLM; validator drops citations beyond 3 or not in the sent set | 🔜 (retriever currently takes `k`) |
 | Company isolation | Company from JWT only; one Chroma collection per company+version; no client override; post-retrieval metadata check | ✅ |
 | Atomic versioning | New version → new collection; pointer flipped in one SQLite transaction after success | ✅ |
-| | Startup reconciler for crashed ingests | 🔜 |
+| | Startup reconciler for crashed ingests | ✅ |
 | Must run without an API key | `LLM_PROVIDER=fake` works end to end; graders' 10-minute check must not depend on a Groq key | 🔜 |
 
 ## 3. Guiding principle: code decides, LLM phrases
@@ -78,7 +78,7 @@ Client ──► FastAPI ──► auth.py (verify, pin alg, require claims)    
              │                                                                │
              └─ GET /admin/policy (role=admin) → active version + history  ✅ [v3]
                                                                               │
- Startup: reconcile 🔜 → seed ingest ✅ (skip companies with an active version) → BM25 cache 🔜
+ Startup: reconcile ✅ → seed ingest ✅ (skip companies with an active version) → BM25 cache 🔜
  Storage: var/chroma/ (persistent)   var/registry.sqlite3 ───────────────────┘
 ```
 
@@ -136,8 +136,8 @@ Rules:
 ## 6. Request flow & failure handling
 | Situation | Response | Status |
 |---|---|---|
-| Missing / invalid / expired JWT, `alg` ≠ HS256, wrong issuer | 401 | ✅ (expiry untested) |
-| Valid JWT, unknown `company_id` | 403 | 🔜 (today: retrieval returns nothing) |
+| Missing / invalid / expired JWT, `alg` ≠ HS256, wrong issuer, missing `role` claim | 401 | ✅ |
+| Valid JWT, unknown `company_id` or unknown `role` | 403 | ✅ |
 | Employee token on `/admin/*` | 403 | ✅ |
 | Body has extra fields (e.g. `company_id`) | 422 (`extra="forbid"`) | ✅ |
 | Question empty or > 500 chars | 422 with a plain message | ✅ (min length 1 → 3 🔜) |
@@ -185,15 +185,18 @@ LLM output schema (Groq JSON mode) (🔜; `app/schemas.py::LLMAnswer` currently 
 - `FakeLLM` modes: `scripted` ✅ (unit tests: good JSON, bad JSON, timeout, injection obedience) and
   `extractive` 🔜 (eval without a key: cites the top chunk and returns its first sentence).
 - Embedding model (~80 MB) downloaded **at image build time** (warm-up step in the Dockerfile). ✅
-  written, ❗ image not yet built and verified.
+  Verified: image builds in ~90 s (1.7 GB), `docker compose up` with no `.env` is healthy in ~8 s, no
+  runtime download; v2 ingested in the container survives `docker compose restart`. ✅
 
 ## 9. Testing strategy
-Current: **32 tests, all passing, ~22 s** (each test re-embeds all three policies in a fresh temp `var/`).
+Current: **40 tests, all passing, ~6 s**. Seed policies are embedded once per session into a template;
+each test gets a private copy (`settings` fixture). Startup/restart tests use an empty `cold_settings`.
 
 - **Unit**
   - chunker: section ids, metadata, header, determinism, paragraph splitting, subsections,
     5 malformed-doc cases ✅
-  - JWT: missing token, bad signature, `alg=none` ✅; expiry, unknown company, bad role 🔜
+  - JWT: missing token, bad signature, `alg=none`, expired, wrong issuer, missing role (401) ✅;
+    unknown company, unknown role, unknown-company admin (403) ✅
   - registry partial-failure + history ✅ (via ingest tests); citation validator, prompt builder, deadline 🔜
 - **API**: FastAPI TestClient via `create_app(settings, store=...)` ✅; `/ask` with `FakeLLM(scripted)` 🔜
 - **Isolation**
@@ -210,7 +213,8 @@ Current: **32 tests, all passing, ~22 s** (each test re-embeds all three policie
   - restart after v2 → still v2 (`skipped: already active`) ✅
   - v1 after v2 → 409 ✅; re-ingest v2 → 409 ✅
   - malformed doc → 422, v1 kept ✅
-  - simulated crash (row left `pending`) → reconciler marks it failed on restart 🔜
+  - simulated crash (row `pending`, 10 of 21 chunks written) → restart marks it failed, drops
+    `nimbus_v2`, v1 still answers, v2 then ingests cleanly ✅; clean startup reconciles nothing ✅
 - **Failure paths**: LLM timeout, 429, invalid JSON twice, no key → all `try_again`, never a 500. 🔜
 
 ## 10. Evaluation (🔜)
@@ -249,7 +253,7 @@ BM25 (`rank-bm25`) + vector, fused with Reciprocal Rank Fusion (k=60), behind
 ## 12. Repo layout
 ```
 app/
-  main.py            create_app(): routes, lifespan startup (reconcile 🔜 → seed ✅ → BM25 🔜) ✅
+  main.py            create_app(): routes, lifespan startup (reconcile ✅ → seed ✅ → BM25 🔜) ✅
   config.py          settings from env, company allow-list, chunk/batch sizes ✅
   auth.py            JWT issue/verify + role dependencies ✅
   schemas.py         request/response/LLM-output models ✅
@@ -257,7 +261,7 @@ app/
   store/registry.py  SQLite active_version pointer + policy_versions history ✅
   store/vector.py    Chroma wrapper (cosine), collection_name() validation ✅
   ingest/chunker.py  section-based chunking + context header ✅
-  ingest/service.py  atomic ingestion + seeding ✅, reconciler 🔜
+  ingest/service.py  atomic ingestion + seeding + reconciler ✅
   rag/retriever.py   active-collection search + metadata check ✅, hybrid + τ 🔜
   rag/prompt.py      prompt building (system prompt drafted) 🔜
   rag/answerer.py    orchestration + validation 🔜
@@ -351,10 +355,10 @@ Key sections for the eval:
 | D13 | ~20 short sections per policy (~1,500 words) with distractor sections | Agreed, ✅ | Retrieval non-trivial; room for bonus |
 | D14 | Asymmetric silence (Kestrel no guest; Nimbus/Saffron no holiday) | Agreed, ✅ | Catches cross-company leaks as "answers" |
 | D15 | Startup ingests `data/policies/seed/` only, idempotently; v2 only via `/admin/ingest` | Agreed, ✅ | Visible before/after; a restart never rolls back |
-| D16 | Startup reconciler: `pending` rows → `failed`, drop their collections | Agreed, 🔜 | A process crash can't run the error handler |
+| D16 | Startup reconciler: `pending` rows → `failed`, drop their collections | Agreed, ✅ | A process crash can't run the error handler |
 | D17 | Chroma collections use cosine space | Agreed, ✅ | Interpretable similarity for τ |
 | D18 | App, tests and eval all run with no API key (`LLM_PROVIDER=fake`) | Agreed, 🔜 (tests ✅ already keyless) | Graders' 10-minute check must not need our key |
-| D19 | Embedding model baked into the Docker image at build | Agreed, ✅ (image build unverified) | No runtime download; faster, more reliable start |
+| D19 | Embedding model baked into the Docker image at build | Agreed, ✅ (verified in Docker) | No runtime download; faster, more reliable start |
 | D20 | One request deadline (2.8 s); repair call only if ≥ 1.0 s left | Agreed, 🔜 | Keeps p95 < 3 s even on the repair path |
 | D21 | Admin ingest scoped to the token's company; version must be > **active** | Agreed, ✅ **[v3 wording]** | Identity from token only; no rollback; failed versions retryable |
 | D22 | Retrieve a pool of 8, send top 3, re-check company_id on metadata | Agreed; metadata check ✅, pool 🔜 | Room for fusion; defence in depth |
@@ -368,3 +372,5 @@ Key sections for the eval:
 | D30 | **[v3]** Header carries company name, cross-checked against the token's company (token stays the identity source) | Agreed, ✅ | Guard against an admin loading the wrong company's file |
 | D31 | **[v3]** Policy files in per-company folders: `seed/<co>/v1.md`, `updates/<co>/v2.md` | Agreed, ✅ | Folder name = company_id, no filename parsing |
 | D32 | **[v3]** Bad ingest document (bad header, wrong company, empty, too large, not UTF-8) → 422 | Agreed, ✅ | One code for "understood but content invalid", same as FastAPI validation |
+| D33 | **[v3]** `role` claim required (missing → 401, no silent default to employee); unknown company/role → 403; auth reads the app's own settings, not the global | Implemented, to review | 401 = not authenticated, 403 = authenticated but not allowed; tests and server can't disagree on secrets |
+| D34 | **[v3]** Reconciler also drops leftover collections of `failed` rows (cleanup that failed at runtime) and never touches the live collection | Implemented, to review | Covers a crash during the except-block cleanup too |
