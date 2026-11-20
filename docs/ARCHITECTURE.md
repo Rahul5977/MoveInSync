@@ -1,6 +1,6 @@
 # Architecture — Commute Policy Assistant (Case Study B)
 
-Status: **v3, reflects the code at commit `2a68e87`** (updated Fri 20 Nov, 13:30 IST).
+Status: **v3, reflects the code at commit `a726091`** (updated Fri 20 Nov, 14:00 IST).
 Changes from v2 are marked **[v3]**. Build status per item: ✅ built and tested · 🔜 planned · ❓ open.
 Any further change goes in the Decision Log first.
 
@@ -152,7 +152,7 @@ Rules:
 | LLM says `covered=false` | `not_covered` + desk pointer (fixed wording, not model text) | ✅ |
 | LLM timeout / 5xx / 429 quota / no API key | `try_again`, HTTP 503, never a half answer | ✅ |
 | LLM returns invalid JSON | 1 repair call if time allows; still bad → `try_again` (`covered=true` + empty answer also counts as invalid; D39) | ✅ |
-| LLM hits `max_tokens` (`finish_reason=length`) | Treated as invalid output → repair if time allows, else `try_again` (D41) | ✅ |
+| LLM hits `max_tokens` (`finish_reason=length`) or Groq 400 `json_validate_failed` | Treated as invalid output → repair if time allows, else `try_again` (D41, D46) | ✅ |
 | LLM cites a chunk it wasn't given | Citation dropped (also deduplicated, capped at 3); if none left → `not_covered` | ✅ |
 | Ingest: bad header / wrong company / empty / too large / not UTF-8 / extra form field | **[v3] 422** (D32), nothing changes | ✅ |
 | Ingest: version ≤ active | 409, nothing changes | ✅ |
@@ -206,8 +206,14 @@ LLM output schema (Groq JSON mode, `temperature=0`, `max_tokens=300`), validated
   Verified: image builds in ~90 s (1.7 GB), `docker compose up` with no `.env` is healthy in ~8 s, no
   runtime download; v2 ingested in the container survives `docker compose restart`. ✅
 
+**Real-Groq smoke test (14:00, `qwen/qwen3.8-27b`)**: 8/8 correct. Nimbus escort 7:45 PM → "No, only
+after 8:00 PM" (§8); Kestrel Saturday → no (§9); Saffron ad-hoc → department head + ₹2,000, injection
+ignored (§10, §11); Kestrel guest → not covered (LLM gate); Kestrel asking Nimbus's rule → not covered;
+pet → τ, 0 calls; Saffron holiday (near-miss, 0.372) → not covered (LLM gate); after v2 ingest → "Yes,
+after 7:30 PM" (`nimbus_v2_s8_p0`). All 1 LLM call or fewer; 76–556 ms end to end.
+
 ## 9. Testing strategy
-Current: **86 tests, all passing, ~9 s**. Seed policies are embedded once per session into a template;
+Current: **90 tests, all passing, ~9 s**. Seed policies are embedded once per session into a template;
 each test gets a private copy (`settings` fixture). Startup/restart tests use an empty `cold_settings`.
 
 - **Unit**
@@ -408,6 +414,6 @@ Key sections for the eval:
 | D42 | **[v3]** Validation errors → 422 with JSON body `{"detail": "<one plain sentence>"}` written by us; never echo Pydantic's error list or the input | Agreed, ✅ | Consistent with other errors; no reflection of user input |
 | D43 | **[v3]** LLM output validated with Pydantic `strict=True`, `extra="ignore"` | Agreed, ✅ | No silent coercion of malformed model output |
 | D44 | **[v3]** Tests never read `.env`: `test_settings()` = `Settings(_env_file=None, llm_provider="fake", groq_api_key="")`; default test app uses a no-reply `FakeLLM([])`; tokens minted with the same settings | Implemented, to review | Once a real key is in `.env`, no test may call Groq or depend on local τ/secret values |
-| D45 | **[v3]** Groq model = `qwen/qwen3.8-27b` (replaces retired `llama-3.1-8b-instant`, which now returns `model_not_found`) | Agreed, 🔜 | Probe 13:45 on our real prompt: correct on escort (answerable "no") and Kestrel guest (not covered), valid JSON within 300 tokens, ~320 ms. gpt-oss-120b also correct but 490–870 ms; gpt-oss-20b wrong on escort and hit `json_validate_failed` at 300 tokens |
-| D46 | **[v3]** Groq HTTP 400 with code `json_validate_failed` = invalid model output (→ repair if ≥ 1.0 s left, else try_again), like `finish_reason=length`; all other 400s stay provider errors | Agreed, 🔜 | Recoverable model error, not a provider failure; keeps D41 logic consistent |
-| D47 | **[v3]** System prompt rule 3 adds: a rule the sections state is covered even when the answer is "no" | Agreed, 🔜 | gpt-oss-20b answered "No, only after 8 PM" yet marked covered=false; cheap robustness for any model |
+| D45 | **[v3]** Groq model = `qwen/qwen3.8-27b` (replaces retired `llama-3.1-8b-instant`, which now returns `model_not_found`) | Agreed, ✅ (smoke 8/8) | Probe 13:45 on our real prompt: correct on escort (answerable "no") and Kestrel guest (not covered), valid JSON within 300 tokens, ~320 ms. gpt-oss-120b also correct but 490–870 ms; gpt-oss-20b wrong on escort and hit `json_validate_failed` at 300 tokens |
+| D46 | **[v3]** Groq HTTP 400 with code `json_validate_failed` = invalid model output (→ repair if ≥ 1.0 s left, else try_again), like `finish_reason=length`; all other 400s stay provider errors | Agreed, ✅ | Recoverable model error, not a provider failure; keeps D41 logic consistent |
+| D47 | **[v3]** System prompt rule 3 adds: a rule the sections state is covered even when the answer is "no" | Agreed, ✅ | gpt-oss-20b answered "No, only after 8 PM" yet marked covered=false; cheap robustness for any model |
