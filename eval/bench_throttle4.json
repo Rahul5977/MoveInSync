@@ -1,0 +1,52 @@
+{
+  "timestamp": "2026-11-20T13:17:05+00:00",
+  "base": "http://localhost:8000",
+  "health": {
+    "status": "ok",
+    "llm": {
+      "provider": "groq",
+      "ready": true
+    }
+  },
+  "n": 30,
+  "throttle_s": 4.0,
+  "client_ms": {
+    "p50": 503,
+    "p95": 1036,
+    "max": 1514
+  },
+  "server_ms": {
+    "p50": 498,
+    "p95": 1025
+  },
+  "statuses": {
+    "answered": 25,
+    "not_covered": 4,
+    "try_again": 1
+  },
+  "client_ms_by_status": {
+    "answered": {
+      "n": 25,
+      "p50": 508,
+      "p95": 1036,
+      "max": 1514
+    },
+    "not_covered": {
+      "n": 4,
+      "p50": 412,
+      "p95": 604,
+      "max": 604
+    },
+    "try_again": {
+      "n": 1,
+      "p50": 284,
+      "p95": 284,
+      "max": 284
+    }
+  },
+  "llm_calls_histogram": {
+    "1": 29,
+    "2": 1
+  },
+  "under_3s_p95": true
+}
