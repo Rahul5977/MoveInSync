@@ -15,9 +15,9 @@ class Principal(BaseModel):
 
 class AskRequest(BaseModel):
     # extra="forbid": a client sending company_id (or anything else) gets a 422.
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
 
-    question: str = Field(min_length=1, max_length=500)
+    question: str = Field(min_length=3, max_length=500)
 
 
 class AnswerStatus(StrEnum):
@@ -36,6 +36,7 @@ class AnswerMeta(BaseModel):
     llm_calls: int = 0
     latency_ms: int = 0
     policy_version: int | None = None
+    retrieval_mode: str = "vector"
 
 
 class AskResponse(BaseModel):
@@ -48,6 +49,7 @@ class AskResponse(BaseModel):
 class RetrievedChunk(BaseModel):
     chunk_id: str
     company_id: str
+    company_name: str
     version: int
     doc_title: str
     section_id: str
@@ -57,10 +59,10 @@ class RetrievedChunk(BaseModel):
 
 
 class LLMAnswer(BaseModel):
-    """Shape the LLM must return. Anything else is rejected."""
+    """Shape the LLM must return. Anything else is rejected (-> repair call or try_again)."""
 
-    model_config = ConfigDict(extra="ignore")
+    model_config = ConfigDict(extra="ignore", strict=True)
 
     covered: bool
-    answer: str
-    citations: list[str] = Field(default_factory=list)  # chunk_ids
+    answer: str = Field(max_length=2000)
+    cited_ids: list[str] = Field(default_factory=list, max_length=10)

@@ -2,6 +2,7 @@
 
 The collection comes from the registry pointer for `company_id` (taken from the JWT). There is
 no parameter through which a client can name a collection, company or version.
+Returns the whole candidate pool (D22), best first; the answerer decides what to send.
 """
 
 import logging
@@ -16,7 +17,7 @@ log = logging.getLogger(__name__)
 def retrieve(
     company_id: str, question: str, registry: Registry, store: VectorStore, k: int
 ) -> tuple[list[RetrievedChunk], int | None]:
-    """Return (chunks, active_version). Empty list + None if the company has no live policy."""
+    """Return (chunks best-first, active_version). ([], None) if the company has no live policy."""
     active = registry.active(company_id)
     if active is None:
         return [], None
@@ -28,4 +29,4 @@ def retrieve(
     safe = [c for c in chunks if c.company_id == company_id and c.version == active.version]
     if len(safe) != len(chunks):
         log.error("Isolation filter dropped %d foreign chunks", len(chunks) - len(safe))
-    return safe, active.version
+    return sorted(safe, key=lambda c: c.score, reverse=True), active.version

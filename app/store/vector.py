@@ -85,6 +85,7 @@ class VectorStore:
                 RetrievedChunk(
                     chunk_id=str(meta["chunk_id"]),
                     company_id=str(meta["company_id"]),
+                    company_name=str(meta["company_name"]),
                     version=int(meta["version"]),
                     doc_title=str(meta["doc_title"]),
                     section_id=str(meta["section_id"]),
